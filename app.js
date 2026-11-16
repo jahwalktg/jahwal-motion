@@ -11,7 +11,7 @@
   var images = { logo: null };   // 공통 로고
   var fieldImgs = {};            // 장면별 사진 (저장 안 함)
   var favs = {}; try { favs = JSON.parse(localStorage.getItem(KEY + '.fav') || '{}'); } catch (e) { }
-  var listQ = '', listG = '';   // 찾기 글자, 묶음(''=전체)
+  var listQ = '', listG = '', listSit = '';   // 찾기 글자, 묶음(''=전체), 상황(''=없음)
   var thumbQ = [];               // 미리보기 그림 대기열
   var prev = $('prev'), pctx = prev.getContext('2d');
   var lastTs = 0, raf = 0, busy = false;
@@ -40,19 +40,44 @@
   }
 
   /* ---- 장면 목록 (찾기·묶음·★·미리보기 그림) ---- */
-  function matches(sc) { if (listG === '★') { if (!favs[sc.id]) return false; } else if (listG && sc.group !== listG) return false; if (!listQ) return true; var q = listQ.replace(/\s+/g, '').toLowerCase(); return (sc.name + sc.desc + sc.group + sc.id).replace(/\s+/g, '').toLowerCase().indexOf(q) >= 0; }
+  function norm(x) { return String(x || '').replace(/\s+/g, '').toLowerCase(); }
+  function expandQ(q) { // 비슷한 말 묶음까지 넓힘
+    var qs = [norm(q)]; (S.SYN || []).forEach(function (g) { var hit = g.some(function (w) { return norm(w).indexOf(norm(q)) >= 0 || norm(q).indexOf(norm(w)) >= 0; }); if (hit) g.forEach(function (w) { qs.push(norm(w)); }); });
+    return qs;
+  }
+  function hay(sc) { var sits = (S.SITUATIONS || []).filter(function (st) { return st.scenes.indexOf(sc.id) >= 0; }).map(function (st) { return st.name; }).join(' '); return norm(sc.name + ' ' + sc.desc + ' ' + sc.group + ' ' + sc.id + ' ' + (S.TAGS[sc.id] || '') + ' ' + sits); }
+  function matches(sc) {
+    if (listG === '★') { if (!favs[sc.id]) return false; } else if (listG && sc.group !== listG) return false;
+    if (!listQ) return true;
+    var h = hay(sc), words = listQ.split(/\s+/).filter(Boolean);
+    return words.every(function (w) { return expandQ(w).some(function (q) { return q && h.indexOf(q) >= 0; }); });
+  }
+  function sitRow() {
+    var h = '<button type="button" class="gt sit' + (listSit === '' ? ' on' : '') + '" data-sit="">상황 고르기 ▾</button>';
+    (S.SITUATIONS || []).forEach(function (st) { h += '<button type="button" class="gt sit' + (listSit === st.id ? ' on' : '') + '" data-sit="' + st.id + '" title="' + st.desc + '">' + st.icon + ' ' + st.name + '</button>'; });
+    $('sits').innerHTML = h;
+  }
+  function card(sc, num) { return '<div class="sc' + (sc.id === state.scene ? ' on' : '') + '" data-id="' + sc.id + '" role="button" tabindex="0">' + (num ? '<span class="num">' + num + '</span>' : '') + '<canvas class="th" width="160" height="90" data-th="' + sc.id + '"></canvas><span class="nm">' + sc.icon + ' ' + sc.name + (sc.liveOnly ? ' <em>현장 재생용</em>' : '') + (sc.marks ? ' <em>스페이스로 단계 넘김</em>' : '') + '</span><button type="button" class="fav' + (favs[sc.id] ? ' on' : '') + '" data-fav="' + sc.id + '" title="자주 쓰는 장면">★</button></div>'; }
   function renderList() {
     var tabs = '<button type="button" class="gt' + (listG === '' ? ' on' : '') + '" data-g="">전체 ' + SCENES.length + '</button>';
     S.GROUPS.forEach(function (g) { var n = SCENES.filter(function (x) { return x.group === g; }).length; if (n) tabs += '<button type="button" class="gt' + (listG === g ? ' on' : '') + '" data-g="' + g + '">' + g + ' ' + n + '</button>'; });
     var nf = Object.keys(favs).filter(function (k) { return favs[k] && S.BY[k]; }).length; tabs += '<button type="button" class="gt' + (listG === '★' ? ' on' : '') + '" data-g="★">★ 자주 ' + nf + '</button>';
-    $('gtabs').innerHTML = tabs;
+    $('gtabs').innerHTML = tabs; sitRow();
     var h = '', shown = 0, lastG = '';
-    SCENES.forEach(function (sc) {
-      if (!matches(sc)) return; shown++;
-      if (!listG && !listQ && sc.group !== lastG) { h += '<div class="grp">' + sc.group + '</div>'; lastG = sc.group; }
-      h += '<div class="sc' + (sc.id === state.scene ? ' on' : '') + '" data-id="' + sc.id + '" role="button" tabindex="0"><canvas class="th" width="160" height="90" data-th="' + sc.id + '"></canvas><span class="nm">' + sc.icon + ' ' + sc.name + (sc.liveOnly ? ' <em>현장 재생용</em>' : '') + (sc.marks ? ' <em>스페이스로 단계 넘김</em>' : '') + '</span><button type="button" class="fav' + (favs[sc.id] ? ' on' : '') + '" data-fav="' + sc.id + '" title="자주 쓰는 장면">★</button></div>';
-    });
-    if (!shown) h = '<p class="hint">맞는 장면이 없습니다. 다른 말로 찾아보세요(예: 시상, 타이머, QR).</p>';
+    var st = listSit && (S.SITUATIONS || []).filter(function (x) { return x.id === listSit; })[0];
+    if (st && !listQ) {
+      h += '<div class="sitHead">' + st.icon + ' <b>' + st.name + '</b> — ' + st.desc + '. 아래 순서대로 쓰면 한 행사가 됩니다.</div>';
+      st.scenes.forEach(function (id, i) { var sc = S.BY[id]; if (!sc) return; if (listG && !matches(sc)) return; shown++; h += card(sc, '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮'[i] || (i + 1)); });
+      var rest = SCENES.filter(function (sc) { return st.scenes.indexOf(sc.id) < 0 && matches(sc); });
+      if (rest.length) { h += '<details class="more"><summary>이 상황에 없는 나머지 ' + rest.length + '개</summary>'; rest.forEach(function (sc) { h += card(sc); }); h += '</details>'; }
+    } else {
+      SCENES.forEach(function (sc) {
+        if (!matches(sc)) return; shown++;
+        if (!listG && !listQ && sc.group !== lastG) { h += '<div class="grp">' + sc.group + '</div>'; lastG = sc.group; }
+        h += card(sc);
+      });
+    }
+    if (!shown) h = '<p class="hint">맞는 장면이 없습니다. 다른 말로 찾아보세요(예: 시상, 타이머, QR, 국기). 없는 장면은 아래 「의견 보내기」로 알려 주세요.</p>';
     $('list').innerHTML = h;
     thumbQ = [].slice.call($('list').querySelectorAll('canvas[data-th]')); if (!thumbTimer) thumbTimer = setTimeout(drawThumbs, 30);
   }
@@ -74,6 +99,8 @@
   $('list').addEventListener('click', function (e) { var f = e.target.closest('[data-fav]'); if (f) { favs[f.dataset.fav] = !favs[f.dataset.fav]; try { localStorage.setItem(KEY + '.fav', JSON.stringify(favs)); } catch (x) { } renderList(); return; } var b = e.target.closest('.sc'); if (!b) return; selectScene(b.dataset.id); });
   $('list').addEventListener('keydown', function (e) { if (e.key !== 'Enter' && e.key !== ' ') return; var b = e.target.closest('.sc'); if (!b) return; e.preventDefault(); selectScene(b.dataset.id); });
   $('gtabs').addEventListener('click', function (e) { var b = e.target.closest('.gt'); if (!b) return; listG = b.dataset.g; renderList(); });
+  $('sits').addEventListener('click', function (e) { var b = e.target.closest('.sit'); if (!b) return; listSit = (b.dataset.sit === listSit) ? '' : b.dataset.sit; if (listSit) listG = ''; renderList(); });
+  $('list').addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('more')) { thumbQ = [].slice.call($('list').querySelectorAll('canvas[data-th]')); if (!thumbTimer) thumbTimer = setTimeout(drawThumbs, 30); } }, true);
   $('q').addEventListener('input', function () { listQ = this.value.trim(); renderList(); });
   function selectScene(id) { state.scene = id; state.t = 0; state.playing = true; renderList(); renderForm(); fitPreview(); save(); try { history.replaceState(null, '', '#' + id); } catch (e) { } if (window.innerWidth < 900) $('form').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 
