@@ -67,7 +67,7 @@
     var st = listSit && (S.SITUATIONS || []).filter(function (x) { return x.id === listSit; })[0];
     if (st && !listQ) {
       h += '<div class="sitHead">' + st.icon + ' <b>' + st.name + '</b> — ' + st.desc + '. 아래 순서대로 쓰면 한 행사가 됩니다.</div>';
-      st.scenes.forEach(function (id, i) { var sc = S.BY[id]; if (!sc) return; if (listG && !matches(sc)) return; shown++; h += card(sc, '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮'[i] || (i + 1)); });
+      st.scenes.forEach(function (id, i) { var sc = S.BY[id]; if (!sc) return; if (listG && !matches(sc)) return; shown++; h += card(sc, '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳'[i] || (i + 1)); });
       var rest = SCENES.filter(function (sc) { return st.scenes.indexOf(sc.id) < 0 && matches(sc); });
       if (rest.length) { h += '<details class="more"><summary>이 상황에 없는 나머지 ' + rest.length + '개</summary>'; rest.forEach(function (sc) { h += card(sc); }); h += '</details>'; }
     } else {

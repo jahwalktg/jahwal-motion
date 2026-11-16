@@ -38,23 +38,40 @@
     slides: '사진 여러 장 슬라이드쇼 앨범 현장 사진 돌아보기 넘김 갤러리',
     thanks: '감사합니다 마무리 끝 인사 설문 QR 폐회 종료',
     party: '축하 콘페티 폭죽 수료 개소 기념 생일 당선 환호 박수',
-    qr: 'QR 큐알 설문 출석 신청 링크 주소 휴대폰 스캔 참여'
+    qr: 'QR 큐알 설문 출석 신청 링크 주소 휴대폰 스캔 참여',
+    declare: '개회 선언 폐회 선언 시작 선언 개회식 폐회식 선포 출발 선언문',
+    phone: '휴대폰 진동 무음 촬영 금지 촬영 안내 비상구 아이콘 시작 전 반복 예절 안내',
+    logoloop: '로고 대기 로딩 숨 쉬는 로고 빈 화면 반복 기관 로고 도는 고리 잠시만 기다려',
+    next: '다음 순서 예고 잠시 후 이어집니다 작은 띠 모서리 예고 안내 투명 발표 사이',
+    clap: '박수 손뼉 환호 분위기 격려 응원 짧은 반복 GIF 큰 박수',
+    sub2: '자막 두 줄 영상 위 자막 번역 질문 답 Q A 시간 지정 투명 캡션 인터뷰 자막',
+    title: '제목 등장 타이핑 한 글자씩 밑줄 슬라이드 제목 타이틀 헤드라인 글자 애니메이션',
+    compare: '전후 비교 전 후 개선 작년 올해 비포 애프터 좌우 비교 화살표 변화',
+    flow: '흐름도 절차 과정 순서도 단계 화살표 상자 프로세스 업무 흐름 참여 과정',
+    timeline: '타임라인 일정 연간 계획 월별 추진 경과 연표 시간 순서 점 선 로드맵',
+    org: '조직도 조직 구성 팀 부서 사업단 체계 센터장 상자 위계 구성도',
+    contact: '문의처 문의 연락처 전화 이메일 주소 담당자 운영 시간 안내 끝 카드',
+    recruit: 'SNS 모집 공고 모집 안내 참여자 모집 채용 공고 카드뉴스 인스타 카카오톡 기간 대상 신청',
+    birthday: '생일 축하 기념일 케이크 풍선 축하 반복 GIF 선물 꽃 메달 참여자 생일',
+    season: '명절 새해 인사 설 추석 한가위 송년 성탄 연하장 인사장 해돋이 보름달 눈 꽃 봄 감사 카카오톡 인사'
   };
   var SYN = [
     ['타이머', '시계', '시간 재기', '스톱워치'], ['QR', '큐알', 'qr코드', '큐알코드'], ['카운트다운', '카운트', '초읽기'],
     ['사진', '이미지', '포토'], ['자막', '글자 띠', '캡션'], ['시상', '수상', '표창', '상장'], ['국민의례', '국기에 대한 경례', '경례'],
     ['조 편성', '조편성', '팀 나누기', '모둠'], ['감사', '땡큐', '고맙습니다'], ['통계', '숫자', '수치', '실적'], ['설문', '만족도'],
-    ['발표', '프레젠테이션', 'PPT', '피피티'], ['행사', '기념식', '개회식', '행사장'], ['교육', '강의', '연수', '워크숍']
+    ['발표', '프레젠테이션', 'PPT', '피피티'], ['행사', '기념식', '개회식', '행사장'], ['교육', '강의', '연수', '워크숍'], ['선언', '선포'], ['박수', '손뼉'], ['조직도', '조직 구성', '구성도'],
+    ['흐름도', '순서도', '절차', '프로세스'], ['타임라인', '일정표', '연표', '로드맵'], ['전후', '전 후', '비포 애프터', '비교'], ['연락처', '문의처', '문의'],
+    ['모집', '공고', '채용'], ['새해', '연하장', '설날', '신년'], ['추석', '한가위', '명절'], ['생일', '기념일', '축하']
   ];
   var SITUATIONS = [
-    { id: 'event', icon: '🎪', name: '행사·기념식 한 바퀴', desc: '입장부터 폐회까지 순서대로', scenes: ['wait', 'safety', 'count', 'open', 'rite', 'guests', 'steps', 'lower', 'award', 'shot', 'draw', 'thanks'] },
-    { id: 'edu', icon: '🎓', name: '교육·강의', desc: '강의 앞뒤와 쉬는 시간, 퀴즈', scenes: ['wait', 'open', 'chapter', 'marker', 'quote', 'quiz', 'timer', 'ptimer', 'alert', 'ask', 'qr', 'thanks'] },
-    { id: 'report', icon: '📊', name: '성과 보고·발표', desc: 'PPT 안에서 숫자·비교·강조', scenes: ['chapter', 'nums', 'bars', 'pct', 'check', 'marker', 'quote', 'slides', 'photo', 'thanks'] },
-    { id: 'cert', icon: '🏆', name: '수료식·시상식', desc: '호명·시상·명단·축하', scenes: ['open', 'rite', 'call', 'award', 'roll', 'party', 'shot', 'thanks'] },
-    { id: 'workshop', icon: '👥', name: '워크숍·조별 활동', desc: '조 나누기와 시간 관리', scenes: ['steps', 'teams', 'ptimer', 'alert', 'timer', 'meal', 'ask', 'shot'] },
-    { id: 'overlay', icon: '🎬', name: '영상·슬라이드 위에 얹기', desc: '배경을 「투명」으로 받아 GIF로', scenes: ['lower', 'ticker', 'alert', 'ptimer'] },
-    { id: 'promo', icon: '📣', name: '소식·홍보·SNS', desc: '사진과 QR, 축하 인사', scenes: ['photo', 'slides', 'qr', 'party', 'quote', 'nums'] },
-    { id: 'wait', icon: '⏳', name: '대기·쉬는 시간', desc: '빈 화면 대신 띄워 두기', scenes: ['wait', 'timer', 'meal', 'ticker', 'qr'] }
+    { id: 'event', icon: '🎪', name: '행사·기념식 한 바퀴', desc: '입장부터 폐회까지 순서대로', scenes: ['wait', 'phone', 'safety', 'count', 'open', 'declare', 'rite', 'guests', 'steps', 'lower', 'next', 'award', 'clap', 'shot', 'draw', 'thanks'] },
+    { id: 'edu', icon: '🎓', name: '교육·강의', desc: '강의 앞뒤와 쉬는 시간, 퀴즈', scenes: ['wait', 'phone', 'open', 'title', 'chapter', 'flow', 'marker', 'quote', 'quiz', 'timer', 'next', 'ptimer', 'alert', 'ask', 'sub2', 'qr', 'contact', 'thanks'] },
+    { id: 'report', icon: '📊', name: '성과 보고·발표', desc: 'PPT 안에서 숫자·비교·강조', scenes: ['title', 'chapter', 'org', 'timeline', 'flow', 'nums', 'bars', 'pct', 'compare', 'check', 'marker', 'quote', 'slides', 'photo', 'thanks'] },
+    { id: 'cert', icon: '🏆', name: '수료식·시상식', desc: '호명·시상·명단·축하', scenes: ['open', 'declare', 'rite', 'call', 'award', 'clap', 'roll', 'party', 'shot', 'thanks'] },
+    { id: 'workshop', icon: '👥', name: '워크숍·조별 활동', desc: '조 나누기와 시간 관리', scenes: ['steps', 'teams', 'ptimer', 'alert', 'next', 'timer', 'meal', 'ask', 'clap', 'shot'] },
+    { id: 'overlay', icon: '🎬', name: '영상·슬라이드 위에 얹기', desc: '배경을 「투명」으로 받아 GIF로', scenes: ['lower', 'sub2', 'next', 'ticker', 'alert', 'ptimer', 'clap'] },
+    { id: 'promo', icon: '📣', name: '소식·홍보·SNS', desc: '사진과 QR, 축하 인사', scenes: ['recruit', 'photo', 'slides', 'qr', 'contact', 'season', 'birthday', 'party', 'quote', 'nums'] },
+    { id: 'wait', icon: '⏳', name: '대기·쉬는 시간', desc: '빈 화면 대신 띄워 두기', scenes: ['wait', 'logoloop', 'phone', 'timer', 'meal', 'ticker', 'qr'] }
   ];
   window.MG.TAGS = TAGS; window.MG.SYN = SYN; window.MG.SITUATIONS = SITUATIONS;
 })();
