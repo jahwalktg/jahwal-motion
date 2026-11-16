@@ -10,18 +10,21 @@
   var state = { scene: 'open', ratio: '16:9', c1: '#1A6EFF', c2: '#F28C28', bg: '#0E1630', bgMode: 'color', p: {}, playing: true, t: 0 };
   var images = { logo: null };   // 공통 로고
   var fieldImgs = {};            // 장면별 사진 (저장 안 함)
+  var favs = {}; try { favs = JSON.parse(localStorage.getItem(KEY + '.fav') || '{}'); } catch (e) { }
+  var listQ = '', listG = '';   // 찾기 글자, 묶음(''=전체)
+  var thumbQ = [];               // 미리보기 그림 대기열
   var prev = $('prev'), pctx = prev.getContext('2d');
   var lastTs = 0, raf = 0, busy = false;
 
   /* ---- 저장·복원(글자·색만, 사진·로고는 저장 안 함) ---- */
   function save() { try { var o = { scene: state.scene, ratio: state.ratio, c1: state.c1, c2: state.c2, bg: state.bg, bgMode: state.bgMode, p: {} }; SCENES.forEach(function (s) { o.p[s.id] = state.p[s.id] || {}; }); localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) { } }
   function load() { try { var o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o) { ['scene', 'ratio', 'c1', 'c2', 'bg', 'bgMode'].forEach(function (k) { if (o[k]) state[k] = o[k]; }); state.p = o.p || {}; } } catch (e) { } if (!S.BY[state.scene]) state.scene = 'open'; }
-  function params(id) { var s = S.BY[id], p = state.p[id] || (state.p[id] = {}); s.fields.forEach(function (f) { if (f.type === 'image') return; if (p[f.k] == null) p[f.k] = f.def == null ? '' : f.def; }); return p; }
+  function params(id) { var s = S.BY[id], p = state.p[id] || (state.p[id] = {}); s.fields.forEach(function (f) { if (f.type === 'image' || f.type === 'images') return; if (p[f.k] == null) p[f.k] = f.def == null ? '' : f.def; }); return p; }
   function dur(s, p) { return typeof s.dur === 'function' ? s.dur(p) : s.dur; }
   function textColor() { if (state.bgMode === 'trans') return '#1A2B50'; var h = state.bg.replace('#', ''), n = parseInt(h, 16); return (0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) > 160 ? '#1A2B50' : '#FFFFFF'; }
   function fullParams(id) {
     var p = Object.assign({}, params(id)); var s = S.BY[id];
-    s.fields.forEach(function (f) { if (f.type === 'image') p[f.k] = fieldImgs[id + '.' + f.k] || null; });
+    s.fields.forEach(function (f) { if (f.type === 'image') p[f.k] = fieldImgs[id + '.' + f.k] || null; if (f.type === 'images') p[f.k] = fieldImgs[id + '.' + f.k] || []; });
     p._c1 = state.c1; p._c2 = state.c2; p._bg = state.bg; p._tx = textColor(); p._logo = images.logo; p._trans = state.bgMode === 'trans';
     return p;
   }
@@ -36,18 +39,43 @@
     ctx.restore();
   }
 
-  /* ---- 장면 목록 ---- */
+  /* ---- 장면 목록 (찾기·묶음·★·미리보기 그림) ---- */
+  function matches(sc) { if (listG === '★') { if (!favs[sc.id]) return false; } else if (listG && sc.group !== listG) return false; if (!listQ) return true; var q = listQ.replace(/\s+/g, '').toLowerCase(); return (sc.name + sc.desc + sc.group + sc.id).replace(/\s+/g, '').toLowerCase().indexOf(q) >= 0; }
   function renderList() {
-    var groups = {}; SCENES.forEach(function (s) { (groups[s.group] = groups[s.group] || []).push(s); });
-    var h = '';
-    Object.keys(groups).forEach(function (g) {
-      h += '<div class="grp">' + g + '</div>';
-      groups[g].forEach(function (s) { h += '<button type="button" class="sc' + (s.id === state.scene ? ' on' : '') + '" data-id="' + s.id + '"><span class="ic">' + s.icon + '</span><span class="nm">' + s.name + (s.liveOnly ? ' <em>현장 재생용</em>' : '') + '</span></button>'; });
+    var tabs = '<button type="button" class="gt' + (listG === '' ? ' on' : '') + '" data-g="">전체 ' + SCENES.length + '</button>';
+    S.GROUPS.forEach(function (g) { var n = SCENES.filter(function (x) { return x.group === g; }).length; if (n) tabs += '<button type="button" class="gt' + (listG === g ? ' on' : '') + '" data-g="' + g + '">' + g + ' ' + n + '</button>'; });
+    var nf = Object.keys(favs).filter(function (k) { return favs[k] && S.BY[k]; }).length; tabs += '<button type="button" class="gt' + (listG === '★' ? ' on' : '') + '" data-g="★">★ 자주 ' + nf + '</button>';
+    $('gtabs').innerHTML = tabs;
+    var h = '', shown = 0, lastG = '';
+    SCENES.forEach(function (sc) {
+      if (!matches(sc)) return; shown++;
+      if (!listG && !listQ && sc.group !== lastG) { h += '<div class="grp">' + sc.group + '</div>'; lastG = sc.group; }
+      h += '<div class="sc' + (sc.id === state.scene ? ' on' : '') + '" data-id="' + sc.id + '" role="button" tabindex="0"><canvas class="th" width="160" height="90" data-th="' + sc.id + '"></canvas><span class="nm">' + sc.icon + ' ' + sc.name + (sc.liveOnly ? ' <em>현장 재생용</em>' : '') + (sc.marks ? ' <em>스페이스로 단계 넘김</em>' : '') + '</span><button type="button" class="fav' + (favs[sc.id] ? ' on' : '') + '" data-fav="' + sc.id + '" title="자주 쓰는 장면">★</button></div>';
     });
+    if (!shown) h = '<p class="hint">맞는 장면이 없습니다. 다른 말로 찾아보세요(예: 시상, 타이머, QR).</p>';
     $('list').innerHTML = h;
+    thumbQ = [].slice.call($('list').querySelectorAll('canvas[data-th]')); if (!thumbTimer) thumbTimer = setTimeout(drawThumbs, 30);
   }
-  $('list').addEventListener('click', function (e) { var b = e.target.closest('.sc'); if (!b) return; selectScene(b.dataset.id); });
-  function selectScene(id) { state.scene = id; state.t = 0; state.playing = true; renderList(); renderForm(); fitPreview(); save(); if (window.innerWidth < 900) $('form').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  var thumbTimer = 0, thumbCache = {};
+  function drawThumbs() { // 한 번에 몇 개씩, 장면 중간 시점 그림 (16:9 기준, 캐시)
+    thumbTimer = 0; var n = 0;
+    while (thumbQ.length && n < 4) {
+      var cv = thumbQ.shift(), id = cv.dataset.th, sc = S.BY[id]; n++;
+      var key = id + '|' + state.c1 + state.c2 + state.bg + state.bgMode;
+      if (thumbCache[key]) { cv.getContext('2d').drawImage(thumbCache[key], 0, 0); continue; }
+      var off = document.createElement('canvas'); off.width = 160; off.height = 90; var ctx = off.getContext('2d');
+      var saveRatio = state.ratio; state.ratio = '16:9';
+      try { var p = fullParams(id), d = dur(sc, p); var t = sc.liveOnly ? 100 : Math.min(d * .62, d - .1); ctx.save(); ctx.scale(160 / 1920, 90 / 1080); if (p._trans) { ctx.fillStyle = '#333'; ctx.fillRect(0, 0, 1920, 1080); } sc.draw(ctx, t, p, S.makeF(ctx, 1920, 1080, FONT)); ctx.restore(); } catch (e) { }
+      state.ratio = saveRatio; thumbCache[key] = off; cv.getContext('2d').drawImage(off, 0, 0);
+    }
+    if (thumbQ.length) thumbTimer = setTimeout(drawThumbs, 16);
+  }
+  function refreshThumbs() { thumbCache = {}; thumbQ = [].slice.call($('list').querySelectorAll('canvas[data-th]')); if (!thumbTimer) thumbTimer = setTimeout(drawThumbs, 200); }
+  $('list').addEventListener('click', function (e) { var f = e.target.closest('[data-fav]'); if (f) { favs[f.dataset.fav] = !favs[f.dataset.fav]; try { localStorage.setItem(KEY + '.fav', JSON.stringify(favs)); } catch (x) { } renderList(); return; } var b = e.target.closest('.sc'); if (!b) return; selectScene(b.dataset.id); });
+  $('list').addEventListener('keydown', function (e) { if (e.key !== 'Enter' && e.key !== ' ') return; var b = e.target.closest('.sc'); if (!b) return; e.preventDefault(); selectScene(b.dataset.id); });
+  $('gtabs').addEventListener('click', function (e) { var b = e.target.closest('.gt'); if (!b) return; listG = b.dataset.g; renderList(); });
+  $('q').addEventListener('input', function () { listQ = this.value.trim(); renderList(); });
+  function selectScene(id) { state.scene = id; state.t = 0; state.playing = true; renderList(); renderForm(); fitPreview(); save(); try { history.replaceState(null, '', '#' + id); } catch (e) { } if (window.innerWidth < 900) $('form').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 
   /* ---- 입력 칸 ---- */
   function renderForm() {
@@ -60,15 +88,20 @@
       else if (f.type === 'select') { h += '<select id="' + id + '" data-k="' + f.k + '">'; f.opts.forEach(function (o) { h += '<option value="' + o[0] + '"' + (p[f.k] === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }); h += '</select>'; }
       else if (f.type === 'number') h += '<input id="' + id + '" type="number" data-k="' + f.k + '" value="' + esc(p[f.k]) + '" min="' + (f.min || 0) + '" max="' + (f.max || 999) + '" step="' + (f.step || 1) + '">';
       else if (f.type === 'image') h += '<input id="' + id + '" type="file" accept="image/*" data-img="' + f.k + '"><small class="hint">' + (fieldImgs[s.id + '.' + f.k] ? '사진이 들어 있습니다. 바꾸려면 다시 고르세요.' : '사진은 이 브라우저 안에서만 쓰고 어디에도 보내지 않습니다.') + '</small>';
+      else if (f.type === 'images') h += '<input id="' + id + '" type="file" accept="image/*" multiple data-imgs="' + f.k + '"><small class="hint">' + ((fieldImgs[s.id + '.' + f.k] || []).length ? (fieldImgs[s.id + '.' + f.k].length + '장 들어 있습니다(고른 순서대로). 바꾸려면 다시 고르세요.') : '여러 장을 한 번에 고르세요(Ctrl 누르고 클릭). 브라우저 안에서만 씁니다.') + '</small>';
       else h += '<input id="' + id + '" type="text" data-k="' + f.k + '" value="' + esc(p[f.k]) + '" maxlength="' + (f.max || 60) + '" placeholder="' + esc(f.ph || '') + '">';
       h += '</label>';
     });
     $('form').innerHTML = h;
     $('form').querySelectorAll('[data-k]').forEach(function (el) { el.addEventListener('input', function () { params(s.id)[el.dataset.k] = el.value; state.t = Math.min(state.t, dur(s, params(s.id))); save(); updateDurLabel(); }); });
     $('form').querySelectorAll('[data-img]').forEach(function (el) { el.addEventListener('change', function () { var f = el.files && el.files[0]; if (!f) return; loadImg(f, function (img) { fieldImgs[s.id + '.' + el.dataset.img] = img; state.t = 0; renderForm(); }); }); });
-    $('liveOnlyNote').hidden = !s.liveOnly; $('dlBox').classList.toggle('dim', !!s.liveOnly);
+    $('form').querySelectorAll('[data-imgs]').forEach(function (el) { el.addEventListener('change', function () { var fs = [].slice.call(el.files || []).slice(0, 8); if (!fs.length) return; var out = new Array(fs.length), left = fs.length; fs.forEach(function (f, i) { loadImg(f, function (img) { out[i] = img; if (!--left) { fieldImgs[s.id + '.' + el.dataset.imgs] = out.filter(Boolean); state.t = 0; renderForm(); updateDurLabel(); } }); }); }); });
+    $('shareBtn').onclick = function () { var sp = new URLSearchParams(); var pp = params(s.id); s.fields.forEach(function (f) { if (f.type === 'image' || f.type === 'images') return; if (pp[f.k] != null && String(pp[f.k]) !== String(f.def == null ? '' : f.def)) sp.set(f.k, pp[f.k]); }); ['ratio', 'c1', 'c2', 'bg', 'bgMode'].forEach(function (k) { sp.set(k, state[k]); }); var url = location.origin + location.pathname + '#' + s.id + '&' + sp.toString(); copyText(url, '이 장면의 설정 링크를 복사했습니다. 동료에게 보내면 같은 화면이 열립니다(사진·로고는 빠짐).'); };
+    $('liveOnlyNote').hidden = !s.liveOnly; $('stepNote').hidden = !s.marks; $('dlBox').classList.toggle('dim', !!s.liveOnly);
     updateDurLabel();
   }
+  function copyText(t, msg) { var done = function () { toast(msg); }; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, function () { fallbackCopy(t); done(); }); else { fallbackCopy(t); done(); } }
+  function fallbackCopy(t) { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e) { } ta.remove(); }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
   function loadImg(file, cb) { var url = URL.createObjectURL(file), img = new Image(); img.onload = function () { cb(img); }; img.onerror = function () { toast('이미지를 읽지 못했습니다.'); }; img.src = url; }
   function updateDurLabel() { var s = S.BY[state.scene], d = dur(s, params(s.id)); $('durLbl').textContent = fmtT(d); $('seek').max = d; }
@@ -78,12 +111,12 @@
   function bindGlobals() {
     $('ratio').value = state.ratio; $('c1').value = state.c1; $('c2').value = state.c2; $('bg').value = state.bg; $('bgMode').value = state.bgMode;
     $('ratio').onchange = function () { state.ratio = this.value; fitPreview(); save(); };
-    ['c1', 'c2', 'bg'].forEach(function (k) { $(k).oninput = function () { state[k] = this.value; save(); }; });
-    $('bgMode').onchange = function () { state.bgMode = this.value; $('bg').disabled = state.bgMode === 'trans'; save(); };
+    ['c1', 'c2', 'bg'].forEach(function (k) { $(k).oninput = function () { state[k] = this.value; save(); clearTimeout(thumbRe); thumbRe = setTimeout(refreshThumbs, 400); }; }); var thumbRe = 0;
+    $('bgMode').onchange = function () { state.bgMode = this.value; $('bg').disabled = state.bgMode === 'trans'; save(); refreshThumbs(); };
     $('bg').disabled = state.bgMode === 'trans';
     $('logo').onchange = function () { var f = this.files && this.files[0]; if (!f) return; loadImg(f, function (img) { images.logo = img; $('logoNote').textContent = '로고 들어옴 (' + img.naturalWidth + '×' + img.naturalHeight + ')'; $('logoDel').hidden = false; }); };
     $('logoDel').onclick = function () { images.logo = null; $('logo').value = ''; $('logoNote').textContent = ''; this.hidden = true; };
-    document.querySelectorAll('.preset').forEach(function (b) { b.onclick = function () { var c = b.dataset.c.split(','); state.c1 = c[0]; state.c2 = c[1]; state.bg = c[2]; $('c1').value = c[0]; $('c2').value = c[1]; $('bg').value = c[2]; save(); }; });
+    document.querySelectorAll('.preset').forEach(function (b) { b.onclick = function () { var c = b.dataset.c.split(','); state.c1 = c[0]; state.c2 = c[1]; state.bg = c[2]; $('c1').value = c[0]; $('c2').value = c[1]; $('bg').value = c[2]; save(); refreshThumbs(); }; });
   }
 
   /* ---- 미리보기 재생 ---- */
@@ -97,7 +130,8 @@
     raf = requestAnimationFrame(tick);
     var dt = lastTs ? (ts - lastTs) / 1000 : 0; lastTs = ts; if (dt > .25) dt = .25;
     var s = S.BY[state.scene], d = dur(s, params(s.id));
-    if (state.playing && !busy) { state.t += dt; if (state.t >= d) { if (live.on || s.liveOnly) state.t = s.liveOnly ? Math.min(state.t, d) : 0; else { state.t = d; state.playing = false; setTimeout(function () { if (!state.playing && state.t >= d) { state.t = 0; state.playing = true; } }, 1200); } } }
+    if (state.playing && !busy) { var before = state.t; state.t += dt;
+      if (live.on && s.marks && live.step) { var ms = s.marks(params(s.id)); for (var mi = 0; mi < ms.length; mi++) { if (before < ms[mi] && state.t >= ms[mi]) { state.t = ms[mi]; state.playing = false; live.waiting = true; break; } } } if (state.t >= d) { if (live.on || s.liveOnly) state.t = s.liveOnly ? Math.min(state.t, d) : 0; else { state.t = d; state.playing = false; setTimeout(function () { if (!state.playing && state.t >= d) { state.t = 0; state.playing = true; } }, 1200); } } }
     drawFrame(pctx, prev.width, prev.height, state.t, state.scene, false);
     $('seek').value = state.t; $('tLbl').textContent = fmtT(state.t); $('play').textContent = state.playing ? '⏸' : '▶';
     if (live.on) drawLive();
@@ -107,18 +141,18 @@
   $('seek').oninput = function () { state.t = parseFloat(this.value); state.playing = false; };
 
   /* ---- 전체화면 재생 ---- */
-  var live = { on: false, cv: $('liveCv'), ctx: $('liveCv').getContext('2d') };
-  function drawLive() { var cv = live.cv, dims = RATIOS[state.ratio], sw = window.innerWidth, sh = window.innerHeight, sc = Math.min(sw / dims[0], sh / dims[1]), w = Math.round(dims[0] * sc), h = Math.round(dims[1] * sc); if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; } cv.style.width = w + 'px'; cv.style.height = h + 'px'; drawFrame(live.ctx, w, h, state.t, state.scene, false); }
-  $('liveBtn').onclick = function () { live.on = true; state.t = 0; state.playing = true; $('live').classList.add('on'); document.body.classList.add('noscroll'); var el = $('live'); if (el.requestFullscreen) el.requestFullscreen().catch(function () { }); };
+  var live = { on: false, step: true, waiting: false, cv: $('liveCv'), ctx: $('liveCv').getContext('2d') };
+  function drawLive() { var cv = live.cv, dims = RATIOS[state.ratio], sw = window.innerWidth, sh = window.innerHeight, sc = Math.min(sw / dims[0], sh / dims[1]), w = Math.round(dims[0] * sc), h = Math.round(dims[1] * sc); if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; } cv.style.width = w + 'px'; cv.style.height = h + 'px'; drawFrame(live.ctx, w, h, state.t, state.scene, false); var sc = S.BY[state.scene]; $('liveHelp').textContent = (sc.marks ? (live.waiting ? '▶ 스페이스: 다음 단계' : '스페이스: 멈춤/다음 단계') : '스페이스 멈춤/재생') + ' · R 처음부터 · Esc 나가기'; $('liveHelp').classList.toggle('wait', !!live.waiting); }
+  $('liveBtn').onclick = function () { live.on = true; live.waiting = false; live.step = $('stepMode').checked; state.t = 0; state.playing = true; $('live').classList.add('on'); document.body.classList.add('noscroll'); var el = $('live'); if (el.requestFullscreen) el.requestFullscreen().catch(function () { }); };
   function exitLive() { live.on = false; $('live').classList.remove('on'); document.body.classList.remove('noscroll'); if (document.fullscreenElement) document.exitFullscreen().catch(function () { }); }
   $('liveExit').onclick = exitLive;
   document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && live.on) exitLive(); });
-  document.addEventListener('keydown', function (e) { if (!live.on) return; if (e.key === 'Escape') exitLive(); if (e.key === ' ') { e.preventDefault(); state.playing = !state.playing; } if (e.key === 'r' || e.key === 'R') { state.t = 0; state.playing = true; } });
-  $('live').addEventListener('click', function (e) { if (e.target === live.cv) { state.playing = !state.playing; } });
+  document.addEventListener('keydown', function (e) { if (!live.on) return; if (e.key === 'Escape') exitLive(); if (e.key === ' ') { e.preventDefault(); if (live.waiting) { live.waiting = false; state.t += 0.001; state.playing = true; } else state.playing = !state.playing; } if (e.key === 'r' || e.key === 'R') { state.t = 0; state.playing = true; } });
+  $('live').addEventListener('click', function (e) { if (e.target === live.cv) { if (live.waiting) { live.waiting = false; state.t += 0.001; state.playing = true; } else state.playing = !state.playing; } });
 
   /* ---- 내려받기 ---- */
   function outSize() { var dims = RATIOS[state.ratio], q = $('vq').value; if (q === 'hd') return [Math.round(dims[0] * 2 / 3), Math.round(dims[1] * 2 / 3)]; return dims; }
-  function fileBase() { var s = S.BY[state.scene], p = params(s.id), first = s.fields.filter(function (f) { return f.type !== 'image' && f.type !== 'select' && f.type !== 'number' && p[f.k]; })[0]; var name = (first ? String(p[first.k]).split('\n')[0] : '').replace(/[\\/:*?"<>|]/g, '').slice(0, 20).trim(); return '[모션] ' + s.name.split(' — ')[0] + (name ? '_' + name : ''); }
+  function fileBase() { var s = S.BY[state.scene], p = params(s.id), cand = s.fields.filter(function (f) { return f.type !== 'image' && f.type !== 'images' && f.type !== 'select' && f.type !== 'number' && f.type !== 'url' && p[f.k]; }), pref = ['title', 'name', 'text', 'prize', 'q', 'hello'], first = cand.filter(function (f) { return pref.indexOf(f.k) >= 0; }).sort(function (x, y) { return pref.indexOf(x.k) - pref.indexOf(y.k); })[0] || cand[0]; var name = (first ? String(p[first.k]).split('\n')[0] : '').replace(/[\\/:*?"<>|]/g, '').slice(0, 20).trim(); return '[모션] ' + s.name.split(' — ')[0] + (name ? '_' + name : ''); }
   function download(blob, name) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000); }
   function progress(on, txt, pct) { $('prog').classList.toggle('on', !!on); if (txt != null) $('progTxt').textContent = txt; if (pct != null) $('progBar').style.width = Math.round(pct * 100) + '%'; }
   var cancelFlag = false; $('progCancel').onclick = function () { cancelFlag = true; };
@@ -210,10 +244,12 @@
 
   /* ---- 시작 ---- */
   load();
-  var hashId = (location.hash || '').replace('#', ''); if (S.BY[hashId]) state.scene = hashId;
+  var hraw = (location.hash || '').replace('#', ''), hashId = hraw.split('&')[0];
+  if (S.BY[hashId]) { state.scene = hashId; if (hraw.indexOf('&') > 0) { try { var sp = new URLSearchParams(hraw.slice(hraw.indexOf('&') + 1)); var pp = params(hashId); sp.forEach(function (v, k) { if (['ratio', 'c1', 'c2', 'bg', 'bgMode'].indexOf(k) >= 0) state[k] = v; else pp[k] = v; }); } catch (e) { } } }
   renderList(); renderForm(); bindGlobals(); fitPreview();
   window.addEventListener('resize', function () { fitPreview(); });
   if (!(window.VideoEncoder && window.Mp4Muxer)) $('mp4Note').hidden = false;
+  $('stepMode').onchange = function () { live.step = this.checked; };
   raf = requestAnimationFrame(tick);
   window._mg = { state: state, drawFrame: drawFrame, selectScene: selectScene, RATIOS: RATIOS, params: params };
 })();
