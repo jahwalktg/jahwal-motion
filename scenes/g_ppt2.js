@@ -1,7 +1,6 @@
 /* 즉석 모션그래픽 — 장면: PPT 꾸밈 (2차) 챕터 전환·형광펜·인용·체크리스트·원형 퍼센트·사진 여러 장 */
 (function () {
   var E = MG.E, seg = MG.seg, lerp = MG.lerp, clamp = MG.clamp, rnd = MG.rnd, lines = MG.lines, hexA = MG.hexA, fmtNum = MG.fmtNum;
-  function bg(ctx, p, F, t, c) { if (p._trans) return; ctx.fillStyle = F.grad(p._bg, hexA(c || p._c1, .3), true); ctx.fillRect(0, 0, F.W, F.H); }
 
   MG.add([
     /* 28. 챕터 전환 카드 */
@@ -15,7 +14,7 @@
         { k: 'total', label: '전체 장 수(선택, 「01 / 04」 표시)', def: '04', max: 4 }
       ],
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy; bg(ctx, p, F, t);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy; F.bg(p, t);
         var g = E.out(seg(t, 0, .8));
         ctx.save(); ctx.globalAlpha = .12; F.text(p.num, W * .78, cy, { size: 700 * u, weight: 900, color: p._c1, alpha: g * .12 }); ctx.restore();
         ctx.fillStyle = p._c2; ctx.fillRect(W * .12, cy - 150 * u, 10 * u, 300 * u * g);
@@ -36,7 +35,7 @@
         { k: 'who', label: '아래 작은 글(선택)', def: '', max: 40 }
       ],
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy; bg(ctx, p, F, t);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy; F.bg(p, t);
         var cols = { y: 'rgba(255,230,0,.75)', g: 'rgba(170,255,120,.75)', p: 'rgba(255,150,200,.75)', b: 'rgba(130,210,255,.75)' }, hc = cols[p.color] || cols.y;
         var size = 76 * u; ctx.font = F.font(800, size); var ls = F.wrap(p.text, W * .84, size, 800); while (ls.length > 3 && size > 30 * u) { size -= 4 * u; ls = F.wrap(p.text, W * .84, size, 800); }
         var lh = size * 1.5, y0 = cy - (ls.length - 1) * lh / 2 - (p.who ? 30 * u : 0), hi = (p.hi || '').trim(), prog = E.io(seg(t, .9, 1.2));
@@ -60,9 +59,9 @@
         { k: 'who', label: '누구', def: '— 참여자 김○○ 님 (편의점 사업단, 참여 8개월)', max: 50 }
       ],
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy; bg(ctx, p, F, t, p._c2);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy; F.bg(p, t, p._c2);
         var g = E.back(seg(t, 0, .7)); ctx.save(); ctx.globalAlpha = .25 * clamp(g, 0, 1); F.text('“', W * .14, H * .28, { size: 400 * u, weight: 900, color: p._c1 }); ctx.restore();
-        var card = F.light(p._bg) && !p._trans ? 'rgba(255,255,255,.85)' : 'rgba(255,255,255,.08)';
+        var card = F.card(p);
         ctx.save(); ctx.globalAlpha = seg(t, .2, .5); ctx.fillStyle = card; F.rr(W * .1, H * .22, W * .8, H * .56, 36 * u); ctx.fill(); ctx.fillStyle = p._c1; F.rr(W * .1, H * .22, 14 * u, H * .56, 7 * u); ctx.fill(); ctx.restore();
         var txt = lines(p.text, 4).join('\n'), n = Math.floor(seg(t, .5, 2.5) * txt.length);
         F.para(txt.slice(0, n), cx + 20 * u, cy, { size: 58 * u, weight: 600, color: p._tx, maxW: W * .66, maxLines: 5, lh: 1.5 });
@@ -79,12 +78,12 @@
       ],
       dur: function (p) { return 1.5 + lines(p.items, 8).length * .7 + 2.5; },
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, its = lines(p.items, 8).map(function (l) { var no = /\s[xX✕]$/.test(l); return { t: l.replace(/\s[xX✕]$/, ''), no: no }; }); bg(ctx, p, F, t);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, its = lines(p.items, 8).map(function (l) { var no = /\s[xX✕]$/.test(l); return { t: l.replace(/\s[xX✕]$/, ''), no: no }; }); F.bg(p, t);
         F.text(p.title, cx, H * .13, { size: 76 * u, weight: 800, color: p._tx, maxW: W * .9, alpha: seg(t, 0, .5) });
         var n = its.length || 1, top = H * .24, gap = Math.min((H * .72) / n, 130 * u), boxW = Math.min(W * .8, 1300 * u), x0 = cx - boxW / 2;
         its.forEach(function (it, i) {
           var y = top + gap * i + gap / 2, a = E.out(seg(t, .5 + i * .25, .4)), ck = E.back(seg(t, 1.5 + i * .7, .4));
-          ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = F.light(p._bg) && !p._trans ? 'rgba(255,255,255,.85)' : 'rgba(255,255,255,.1)'; F.rr(x0, y - gap * .4, boxW, gap * .8, 18 * u); ctx.fill();
+          ctx.save(); ctx.globalAlpha = a; F.panel(x0, y - gap * .4, boxW, gap * .8, 18 * u, p);
           ctx.lineWidth = 5 * u; ctx.strokeStyle = hexA(p._tx, .5); F.rr(x0 + gap * .2, y - gap * .24, gap * .48, gap * .48, 10 * u); ctx.stroke(); ctx.restore();
           if (ck > 0) { ctx.save(); ctx.translate(x0 + gap * .44, y); ctx.scale(Math.max(.01, ck), Math.max(.01, ck)); if (it.no) { F.text('✕', 0, 0, { size: gap * .42, weight: 900, color: '#E63946' }); } else { ctx.fillStyle = '#1F9D5C'; F.rr(-gap * .24, -gap * .24, gap * .48, gap * .48, 10 * u); ctx.fill(); F.text('✓', 0, 2 * u, { size: gap * .38, weight: 900, color: '#fff' }); } ctx.restore(); }
           F.text(it.t, x0 + gap * .85, y, { size: Math.min(50 * u, gap * .38), weight: 700, color: p._tx, align: 'left', maxW: boxW - gap * 1.1, alpha: a * (ck > 0 && it.no ? .6 : 1) });
@@ -100,7 +99,7 @@
         { k: 'items', label: '항목(한 줄에 「이름 | 퍼센트」, 3개까지)', type: 'lines', def: '참여자 모집 | 112\n취·창업 | 86\n교육 만족도 | 94', max: 3 }
       ],
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy; bg(ctx, p, F, t);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy; F.bg(p, t);
         var its = lines(p.items, 3).map(function (l) { var a = l.split('|').map(function (x) { return x.trim(); }); return { l: a[0] || '', v: parseFloat((a[1] || '0').replace(/[^\d.\-]/g, '')) || 0 }; }), n = its.length || 1, tall = H > W * 1.1;
         F.text(p.title, cx, H * (tall ? .12 : .15), { size: 72 * u, weight: 800, color: p._tx, maxW: W * .9, alpha: seg(t, 0, .5) });
         its.forEach(function (it, i) {
@@ -130,7 +129,7 @@
         var W = F.W, H = F.H, u = F.u, cx = F.cx, imgs = p.imgs || [], caps = lines(p.caps, 8), e = +p.each || 3.5, t0 = p.title ? 1.5 : 0;
         ctx.fillStyle = p._trans ? 'rgba(0,0,0,0)' : '#111'; ctx.fillRect(0, 0, W, H);
         if (!imgs.length) { ctx.fillStyle = hexA(p._c1, .5); ctx.fillRect(0, 0, W, H); F.text('사진을 여러 장 넣어 주세요 (왼쪽 「사진 여러 장」 칸)', cx, F.cy, { size: 54 * u, weight: 600, color: '#fff', maxW: W * .85 }); return; }
-        if (t < t0) { ctx.fillStyle = p._bg; ctx.fillRect(0, 0, W, H); F.text(p.title, cx, F.cy, { size: 100 * u, weight: 900, color: p._tx, maxW: W * .9, alpha: seg(t, 0, .5) }); return; }
+        if (t < t0) { F.bg(p, t); F.text(p.title, cx, F.cy, { size: 100 * u, weight: 900, color: p._tx, maxW: W * .9, alpha: seg(t, 0, .5) }); return; }
         var tt = t - t0, i = Math.min(imgs.length - 1, Math.floor(tt / e)), f = (tt - i * e) / e, r = rnd(i + 3);
         function kb(img, f, k) { var r2 = rnd(k + 3), dirx = r2() > .5 ? 1 : -1, z = lerp(1.0, 1.14, f); F.imgCover(img, 0, 0, W, H, z, .5 + dirx * (f - .5) * .3, .5); }
         kb(imgs[i], f, i);

@@ -1,9 +1,7 @@
 /* 즉석 모션그래픽 — 장면: 마무리·홍보 (3차) 문의처·SNS 모집 공고·생일 축하·명절·새해 인사 */
 (function () {
   var E = MG.E, seg = MG.seg, lerp = MG.lerp, clamp = MG.clamp, rnd = MG.rnd, lines = MG.lines, hexA = MG.hexA;
-  function bg(ctx, p, F, t, c) { if (p._trans) return; ctx.fillStyle = F.grad(p._bg, hexA(c || p._c1, .35), true); ctx.fillRect(0, 0, F.W, F.H); F.deco(p._c1, p._c2, t); }
   function emoji(ctx, s, x, y, size) { ctx.font = size + 'px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, x, y); }
-  function card(p, F) { return F.light(p._bg) && !p._trans ? 'rgba(255,255,255,.88)' : 'rgba(255,255,255,.1)'; }
   function confetti(ctx, F, t, p, dur, n) { var r = rnd(2026), cols = [p._c1, p._c2, '#F2B705', '#E63946', '#1F9D5C', '#8A6BE0'], W = F.W, H = F.H, u = F.u; ctx.save(); for (var i = 0; i < n; i++) { var x0 = r() * W, sp = (.6 + r() * .6), ph = r() * dur, w = (10 + r() * 14) * u, h = (14 + r() * 20) * u, col = cols[Math.floor(r() * cols.length)], sw = (r() - .5) * 2, rot = r() * 6.28, rs = (r() - .5) * 6; var tt = ((t + ph) % dur) / dur; var y = -h * 2 + tt * (H + h * 4) * sp / .9, x = x0 + Math.sin(tt * 6.28 * 2 + ph) * 60 * u * sw; ctx.save(); ctx.translate(x, y); ctx.rotate(rot + tt * rs); ctx.scale(Math.cos(tt * 6.28 * 3 + ph), 1); ctx.fillStyle = col; ctx.globalAlpha = .95; ctx.fillRect(-w / 2, -h / 2, w, h); ctx.restore(); } ctx.restore(); }
 
   MG.add([
@@ -21,13 +19,13 @@
         { k: 'hours', label: '시간(선택)', def: '평일 09:00 ~ 18:00', max: 30 }
       ],
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, tall = H > W * 1.1; bg(ctx, p, F, t);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, tall = H > W * 1.1; F.bg(p, t);
         var rows = [['👤', p.who], ['📞', p.tel], ['✉️', p.mail], ['📍', p.addr], ['🕘', p.hours]].filter(function (r) { return r[1]; }), n = rows.length || 1;
         var g0 = E.out(seg(t, 0, .6)), lh = 120 * u;
         ctx.save(); ctx.translate(0, (1 - g0) * 30 * u); ctx.globalAlpha = g0; if (!F.logo(p._logo, cx - lh * 1.2, H * .1, lh * 2.4, lh)) F.text(p.org, cx, H * .15, { size: 60 * u, weight: 800, color: p._tx, maxW: W * .8 }); ctx.restore();
         F.text(p.title, cx, H * .29, { size: 56 * u, weight: 700, color: p._tx, maxW: W * .86, alpha: seg(t, .4, .5) });
         var bw = Math.min(W * .76, 1200 * u), rh = Math.min(110 * u, (H * .58) / n), x0 = cx - bw / 2, y0 = H * .37;
-        ctx.save(); ctx.globalAlpha = seg(t, .6, .5); ctx.fillStyle = card(p, F); F.rr(x0, y0, bw, rh * n + 40 * u, 28 * u); ctx.fill(); ctx.restore();
+        ctx.save(); ctx.globalAlpha = seg(t, .6, .5); F.panel(x0, y0, bw, rh * n + 40 * u, 28 * u, p); ctx.restore();
         rows.forEach(function (r, i) { var a = E.out(seg(t, 1.0 + i * .45, .5)), y = y0 + 20 * u + rh * i + rh / 2; ctx.save(); ctx.globalAlpha = a; ctx.translate((1 - a) * -40 * u, 0); F.circle(x0 + 70 * u, y, rh * .36, hexA(p._c1, .95)); emoji(ctx, r[0], x0 + 70 * u, y + 3 * u, rh * .4); ctx.restore(); F.text(r[1], x0 + 140 * u, y + 2 * u, { size: Math.min(48 * u, rh * .44), weight: i === 1 ? 800 : 600, color: p._tx, align: 'left', maxW: bw - 180 * u, alpha: a }); });
       }
     },
@@ -43,12 +41,12 @@
       ],
       dur: function (p) { return 1.8 + lines(p.items, 6).length * .6 + 2; },
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, tall = H > W * 1.1, sq = Math.abs(W - H) < W * .1; bg(ctx, p, F, t);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, tall = H > W * 1.1, sq = Math.abs(W - H) < W * .1; F.bg(p, t);
         var its = lines(p.items, 6).map(function (l) { var a = l.split('|').map(function (x) { return x.trim(); }); return a.length > 1 ? { k: a[0], v: a.slice(1).join(' | ') } : { k: '', v: a[0] }; }), n = its.length || 1;
         var gb = E.back(seg(t, .1, .5)); if (gb > 0) { ctx.save(); ctx.translate(cx, H * .1); var s = Math.max(.01, gb); ctx.scale(s, s); ctx.font = F.font(800, 40 * u); var bw = ctx.measureText(p.badge).width + 80 * u; ctx.fillStyle = p._c2; F.rr(-bw / 2, -36 * u, bw, 72 * u, 36 * u); ctx.fill(); F.text(p.badge, 0, 2 * u, { size: 40 * u, weight: 800, color: '#fff' }); ctx.restore(); }
         F.para(p.title, cx, H * (tall || sq ? .24 : .25), { size: (tall || sq ? 84 : 92) * u, weight: 900, color: p._tx, maxW: W * .86, maxLines: 2, alpha: seg(t, .6, .6) });
         var bw2 = W * .86, x0 = cx - bw2 / 2, y0 = H * (tall || sq ? .36 : .4), rh = Math.min(96 * u, (H * .5 - 40 * u) / n), kw = 180 * u;
-        ctx.save(); ctx.globalAlpha = seg(t, 1.2, .5); ctx.fillStyle = card(p, F); F.rr(x0, y0, bw2, rh * n + 40 * u, 28 * u); ctx.fill(); ctx.restore();
+        ctx.save(); ctx.globalAlpha = seg(t, 1.2, .5); F.panel(x0, y0, bw2, rh * n + 40 * u, 28 * u, p); ctx.restore();
         its.forEach(function (it, i) { var a = E.out(seg(t, 1.6 + i * .6, .5)), y = y0 + 20 * u + rh * i + rh / 2; if (it.k) { ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = hexA(p._c1, .95); F.rr(x0 + 30 * u, y - rh * .33, kw, rh * .66, 14 * u); ctx.fill(); ctx.restore(); F.text(it.k, x0 + 30 * u + kw / 2, y + 2 * u, { size: Math.min(34 * u, rh * .38), weight: 800, color: '#fff', maxW: kw - 20 * u, alpha: a }); } F.text(it.v, x0 + (it.k ? 30 * u + kw + 30 * u : 40 * u), y + 2 * u, { size: Math.min(40 * u, rh * .42), weight: 600, color: p._tx, align: 'left', maxW: bw2 - kw - 100 * u, alpha: a }); });
         var lh = 70 * u, ya = H * .93; ctx.save(); ctx.globalAlpha = seg(t, 1.6 + n * .6, .6); if (!F.logo(p._logo, cx - lh * 1.2, ya - lh / 2, lh * 2.4, lh)) F.text(p.org, cx, ya, { size: 40 * u, weight: 700, color: p._tx, maxW: W * .8 }); ctx.restore();
       }
@@ -65,7 +63,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, dur = 6, ph = (t / dur) * Math.PI * 2;
-        if (!p._trans) { ctx.fillStyle = F.grad(p._bg, hexA(p._c2, .4), true); ctx.fillRect(0, 0, W, H); }
+        F.bg(p, t, p._c2);
         var r = rnd(49), cols = [p._c1, p._c2, '#F2B705', '#E63946', '#1F9D5C', '#8A6BE0'];
         ctx.save(); for (var i = 0; i < 14; i++) { var x0 = r() * W, ph2 = r(), R = (36 + r() * 30) * u, col = cols[Math.floor(r() * cols.length)], sw = (r() - .5) * 80 * u; var tt = ((t / dur) + ph2) % 1; var y = H + R * 2 - tt * (H + R * 5), x = x0 + Math.sin(tt * 6.28 + ph2 * 6) * sw; ctx.globalAlpha = .9; ctx.strokeStyle = hexA(p._tx, .35); ctx.lineWidth = 2 * u; ctx.beginPath(); ctx.moveTo(x, y + R); ctx.quadraticCurveTo(x + 10 * u, y + R * 2.2, x - 6 * u, y + R * 3.2); ctx.stroke(); ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(x, y, R * .85, R, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.ellipse(x - R * .3, y - R * .35, R * .2, R * .3, -.5, 0, Math.PI * 2); ctx.fill(); } ctx.restore();
         confetti(ctx, F, t, p, dur, 60);

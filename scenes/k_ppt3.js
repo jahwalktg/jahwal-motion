@@ -1,8 +1,6 @@
 /* 즉석 모션그래픽 — 장면: PPT 꾸밈 (3차) 제목 등장·전/후 비교·흐름도·타임라인·조직도 */
 (function () {
   var E = MG.E, seg = MG.seg, lerp = MG.lerp, clamp = MG.clamp, rnd = MG.rnd, lines = MG.lines, hexA = MG.hexA;
-  function bg(ctx, p, F, t, c) { if (p._trans) return; ctx.fillStyle = F.grad(p._bg, hexA(c || p._c1, .3), true); ctx.fillRect(0, 0, F.W, F.H); }
-  function card(ctx, p, F) { return F.light(p._bg) && !p._trans ? 'rgba(255,255,255,.88)' : 'rgba(255,255,255,.1)'; }
   function arrow(ctx, x1, y1, x2, y2, w, color, g) { var dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1, ex = x1 + dx * g, ey = y1 + dy * g, ux = dx / L, uy = dy / L; ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(ex, ey); ctx.stroke(); if (g > .95) { var h = w * 3.2; ctx.beginPath(); ctx.moveTo(ex + ux * h * .6, ey + uy * h * .6); ctx.lineTo(ex - ux * h * .6 - uy * h * .6, ey - uy * h * .6 + ux * h * .6); ctx.lineTo(ex - ux * h * .6 + uy * h * .6, ey - uy * h * .6 - ux * h * .6); ctx.closePath(); ctx.fill(); } ctx.restore(); }
   function splitKV(l) { var a = l.split('|').map(function (x) { return x.trim(); }); return a.length > 1 ? { k: a[0], v: a.slice(1).join(' | ') } : { k: '', v: a[0] }; }
 
@@ -18,7 +16,7 @@
         { k: 'align', label: '정렬', type: 'select', def: 'c', opts: [['c', '가운데'], ['l', '왼쪽']] }
       ],
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy; bg(ctx, p, F, t);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy; F.bg(p, t);
         var size = 120 * u; ctx.font = F.font(900, size); while (ctx.measureText(p.title).width > W * .86 && size > 40 * u) { size -= 4 * u; ctx.font = F.font(900, size); }
         var tw = ctx.measureText(p.title).width, left = p.align === 'l' ? W * .1 : cx - tw / 2, y = cy - 20 * u, prog = seg(t, .2, 1.6);
         if (p.style === 'wipe') { ctx.save(); ctx.beginPath(); ctx.rect(left - 10 * u, y - size, tw * E.io(prog) + 20 * u, size * 2); ctx.clip(); F.text(p.title, left, y, { size: size, weight: 900, color: p._tx, align: 'left' }); ctx.restore(); }
@@ -40,10 +38,10 @@
         { k: 'rl', label: '오른쪽 내용(4개까지)', type: 'lines', def: '파일 넣으면 표 완성\n붙여넣기 한 번\n10분', max: 4 }
       ],
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, tall = H > W * 1.1; bg(ctx, p, F, t);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, tall = H > W * 1.1; F.bg(p, t);
         F.text(p.title, cx, H * .12, { size: 64 * u, weight: 800, color: p._tx, maxW: W * .9, alpha: seg(t, 0, .5) });
         var cw = tall ? W * .8 : W * .38, ch = tall ? H * .3 : H * .56, lx = tall ? cx - cw / 2 : W * .06, ly = tall ? H * .2 : H * .26, rx = tall ? lx : W - W * .06 - cw, ry = tall ? H * .62 : ly;
-        function box(x, y, title, items, g, hot, t0) { if (g <= 0) return; ctx.save(); ctx.globalAlpha = g; ctx.translate(0, (1 - g) * 40 * u); ctx.fillStyle = card(ctx, p, F); F.rr(x, y, cw, ch, 28 * u); ctx.fill(); ctx.fillStyle = hot ? p._c1 : hexA(p._tx, .35); F.rr(x, y, cw, 96 * u, 28 * u); ctx.fill(); ctx.fillRect(x, y + 60 * u, cw, 36 * u); ctx.restore(); F.text(title, x + cw / 2, y + 48 * u, { size: 50 * u, weight: 800, color: '#fff', maxW: cw * .9, alpha: g }); var its = lines(items, 4), lh = Math.min(100 * u, (ch - 130 * u) / Math.max(1, its.length)); its.forEach(function (s, i) { var a = seg(t, t0 + i * .3, .4); F.text((hot ? '✓ ' : '• ') + s, x + 40 * u, y + 130 * u + lh * i + lh / 2, { size: Math.min(46 * u, lh * .5), weight: hot ? 700 : 500, color: p._tx, align: 'left', maxW: cw - 80 * u, alpha: a * g }); }); }
+        function box(x, y, title, items, g, hot, t0) { if (g <= 0) return; ctx.save(); ctx.globalAlpha = g; ctx.translate(0, (1 - g) * 40 * u); F.panel(x, y, cw, ch, 28 * u, p); ctx.fillStyle = hot ? p._c1 : hexA(p._tx, .35); F.rr(x, y, cw, 96 * u, 28 * u); ctx.fill(); ctx.fillRect(x, y + 60 * u, cw, 36 * u); ctx.restore(); F.text(title, x + cw / 2, y + 48 * u, { size: 50 * u, weight: 800, color: '#fff', maxW: cw * .9, alpha: g }); var its = lines(items, 4), lh = Math.min(100 * u, (ch - 130 * u) / Math.max(1, its.length)); its.forEach(function (s, i) { var a = seg(t, t0 + i * .3, .4); F.text((hot ? '✓ ' : '• ') + s, x + 40 * u, y + 130 * u + lh * i + lh / 2, { size: Math.min(46 * u, lh * .5), weight: hot ? 700 : 500, color: p._tx, align: 'left', maxW: cw - 80 * u, alpha: a * g }); }); }
         box(lx, ly, p.lt, p.ll, E.out(seg(t, .3, .6)), false, .8);
         var ag = E.io(seg(t, 2.2, .7)); if (tall) arrow(ctx, cx, ly + ch + 20 * u, cx, ry - 20 * u, 14 * u, p._c2, ag); else arrow(ctx, lx + cw + 30 * u, cy + 40 * u, rx - 30 * u, cy + 40 * u, 14 * u, p._c2, ag);
         box(rx, ry, p.rt, p.rl, E.out(seg(t, 3.0, .6)), true, 3.5);
@@ -59,7 +57,7 @@
       ],
       dur: function (p) { return 1 + lines(p.items, 6).length * .9 + 1.5; },
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, tall = H > W * 1.1; bg(ctx, p, F, t);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, tall = H > W * 1.1; F.bg(p, t);
         var its = lines(p.items, 6).map(splitKV), n = its.length || 1;
         F.text(p.title, cx, H * .12, { size: 64 * u, weight: 800, color: p._tx, maxW: W * .9, alpha: seg(t, 0, .5) });
         var gap = 70 * u, bw, bh, x0, y0; if (tall) { bh = Math.min(200 * u, (H * .7 - gap * (n - 1)) / n); bw = W * .76; x0 = cx - bw / 2; y0 = H * .2; } else { bw = Math.min(420 * u, (W * .9 - gap * (n - 1)) / n); bh = 240 * u; x0 = cx - (bw * n + gap * (n - 1)) / 2; y0 = cy - bh / 2 + 40 * u; }
@@ -67,7 +65,7 @@
           var x = tall ? x0 : x0 + i * (bw + gap), y = tall ? y0 + i * (bh + gap) : y0, g = E.back(seg(t, .6 + i * .9, .5)), hot = i === n - 1;
           if (i) { var ag = E.io(seg(t, .3 + i * .9, .4)); if (tall) arrow(ctx, cx, y - gap + 8 * u, cx, y - 10 * u, 10 * u, p._c2, ag); else arrow(ctx, x - gap + 8 * u, y + bh / 2, x - 10 * u, y + bh / 2, 10 * u, p._c2, ag); }
           if (g <= 0) return; ctx.save(); ctx.translate(x + bw / 2, y + bh / 2); var s = Math.max(.01, g); ctx.scale(s, s); ctx.translate(-(x + bw / 2), -(y + bh / 2));
-          ctx.fillStyle = hot ? p._c1 : card(ctx, p, F); F.rr(x, y, bw, bh, 24 * u); ctx.fill(); if (!hot) { ctx.strokeStyle = hexA(p._c1, .6); ctx.lineWidth = 4 * u; ctx.stroke(); }
+          ctx.fillStyle = hot ? p._c1 : F.card(p); F.rr(x, y, bw, bh, 24 * u); ctx.fill(); if (!hot) { ctx.strokeStyle = hexA(p._c1, .6); ctx.lineWidth = 4 * u; ctx.stroke(); }
           F.circle(x + 36 * u, y + 36 * u, 24 * u, hot ? 'rgba(255,255,255,.3)' : p._c1); F.text(i + 1, x + 36 * u, y + 38 * u, { size: 28 * u, weight: 800, color: '#fff' });
           var k = it.k || it.v, v = it.k ? it.v : '';
           F.text(k, x + bw / 2, y + bh / 2 - (v ? 22 * u : 0), { size: Math.min(50 * u, bh * .24), weight: 800, color: hot ? '#fff' : p._tx, maxW: bw - 50 * u });
@@ -87,7 +85,7 @@
       ],
       dur: function (p) { return 1 + lines(p.items, 8).length * .7 + 1.5; },
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, tall = H > W * 1.1; bg(ctx, p, F, t);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, tall = H > W * 1.1; F.bg(p, t);
         var its = lines(p.items, 8).map(splitKV), n = its.length || 1, now = parseInt(p.now, 10);
         F.text(p.title, cx, H * .12, { size: 64 * u, weight: 800, color: p._tx, maxW: W * .9, alpha: seg(t, 0, .5) });
         var x1 = W * .08, x2 = W * .92, ly = cy + 40 * u, y1 = H * .22, y2 = H * .92, lx = W * .18;
@@ -114,7 +112,7 @@
       ],
       dur: function (p) { return 1 + lines(p.mid, 4).length * .5 + lines(p.low, 4).length * .5 + 2; },
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, tall = H > W * 1.1; bg(ctx, p, F, t);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, tall = H > W * 1.1; F.bg(p, t);
         var mids = lines(p.mid, 4), n = mids.length || 1, lows = {}; lines(p.low, 4).forEach(function (l) { var a = l.split('|'); if (a.length > 1) lows[parseInt(a[0], 10)] = a.slice(1).join('|').trim(); });
         var tw = Math.min(W * .5, 640 * u), th = (p.top2 ? 150 : 110) * u, ty = H * .1, g0 = E.back(seg(t, .2, .5));
         if (g0 > 0) { ctx.save(); ctx.translate(cx, ty + th / 2); var s0 = Math.max(.01, g0); ctx.scale(s0, s0); ctx.fillStyle = p._c1; F.rr(-tw / 2, -th / 2, tw, th, 22 * u); ctx.fill(); F.text(p.top, 0, p.top2 ? -24 * u : 0, { size: 54 * u, weight: 900, color: '#fff', maxW: tw - 60 * u }); F.text(p.top2, 0, 36 * u, { size: 34 * u, weight: 500, color: 'rgba(255,255,255,.9)', maxW: tw - 60 * u }); ctx.restore(); }
@@ -123,11 +121,11 @@
         mids.forEach(function (m, i) {
           var x = x0 + i * (mw + gap), g = E.back(seg(t, 1.2 + i * .5, .45)); if (g <= 0) return;
           ctx.save(); ctx.strokeStyle = hexA(p._tx, .4); ctx.lineWidth = 5 * u; ctx.beginPath(); ctx.moveTo(x + mw / 2, ty + th + 55 * u); ctx.lineTo(x + mw / 2, my); ctx.stroke(); ctx.restore();
-          ctx.save(); ctx.translate(x + mw / 2, my + mh / 2); var s = Math.max(.01, g); ctx.scale(s, s); ctx.fillStyle = card(ctx, p, F); F.rr(-mw / 2, -mh / 2, mw, mh, 18 * u); ctx.fill(); ctx.strokeStyle = p._c1; ctx.lineWidth = 5 * u; ctx.stroke(); ctx.fillStyle = p._c2; F.rr(-mw / 2, -mh / 2, mw, 12 * u, 6 * u); ctx.fill(); F.text(m, 0, 6 * u, { size: 44 * u, weight: 800, color: p._tx, maxW: mw - 40 * u }); ctx.restore();
+          ctx.save(); ctx.translate(x + mw / 2, my + mh / 2); var s = Math.max(.01, g); ctx.scale(s, s); F.panel(-mw / 2, -mh / 2, mw, mh, 18 * u, p); ctx.strokeStyle = p._c1; ctx.lineWidth = 5 * u; ctx.stroke(); ctx.fillStyle = p._c2; F.rr(-mw / 2, -mh / 2, mw, 12 * u, 6 * u); ctx.fill(); F.text(m, 0, 6 * u, { size: 44 * u, weight: 800, color: p._tx, maxW: mw - 40 * u }); ctx.restore();
           var low = lows[i + 1]; if (!low) return; var gl = seg(t, 1.2 + n * .5 + i * .5, .5); if (gl <= 0) return;
           var ly = my + mh + 50 * u, lh = H - ly - H * .06, parts = low.split(/\s*[·,、]\s*/).filter(Boolean), ph = Math.min(80 * u, lh / Math.max(1, parts.length));
           ctx.save(); ctx.globalAlpha = gl; ctx.strokeStyle = hexA(p._tx, .35); ctx.lineWidth = 4 * u; ctx.setLineDash([10 * u, 10 * u]); ctx.beginPath(); ctx.moveTo(x + mw / 2, my + mh); ctx.lineTo(x + mw / 2, ly + ph * parts.length - ph / 2); ctx.stroke(); ctx.restore();
-          parts.forEach(function (s2, j) { var a = seg(t, 1.2 + n * .5 + i * .5 + j * .15, .3); var yy = ly + ph * j + ph / 2; ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = card(ctx, p, F); F.rr(x + 30 * u, yy - ph * .4, mw - 60 * u, ph * .8, 12 * u); ctx.fill(); ctx.restore(); F.text(s2, x + mw / 2, yy + 2 * u, { size: Math.min(34 * u, ph * .45), weight: 600, color: p._tx, maxW: mw - 90 * u, alpha: a }); });
+          parts.forEach(function (s2, j) { var a = seg(t, 1.2 + n * .5 + i * .5 + j * .15, .3); var yy = ly + ph * j + ph / 2; ctx.save(); ctx.globalAlpha = a; F.panel(x + 30 * u, yy - ph * .4, mw - 60 * u, ph * .8, 12 * u, p); ctx.restore(); F.text(s2, x + mw / 2, yy + 2 * u, { size: Math.min(34 * u, ph * .45), weight: 600, color: p._tx, maxW: mw - 90 * u, alpha: a }); });
         });
       }
     }

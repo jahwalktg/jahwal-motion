@@ -42,7 +42,7 @@
   function stepsDur(segs) { return segs.reduce(function (a, s) { return a + s.d; }, 0); }
   function stepsMarks(segs) { var t = 0, m = []; segs.forEach(function (s, i) { if (i) m.push(t); t += s.d; }); return m; }
   function drawSteps(segs, ctx, t, p, F) { var acc = 0; for (var i = 0; i < segs.length; i++) { if (t < acc + segs[i].d || i === segs.length - 1) { segs[i].draw(ctx, Math.min(t - acc, segs[i].d), p, F); return; } acc += segs[i].d; } }
-  function bgFlag(ctx, p, F, t) { var W = F.W, H = F.H, u = F.u; ctx.fillStyle = p._trans ? 'rgba(0,0,0,0)' : p._bg; ctx.fillRect(0, 0, W, H); }
+  function bgFlag(ctx, p, F, t) { F.bg(p, t || 0, null, { plain: true }); }
   function centerFlag(ctx, F, t, scale, alpha) { var W = F.W, H = F.H, u = F.u, band = H * .58, fw = Math.min(W * .62, band * 1.5) * (scale || 1), fh = fw * 2 / 3; flag(ctx, F.cx - fw / 2, H * .08 + (band - fh) / 2, fw, alpha); }   // 태극기는 위쪽 띠(8%~66%) 안에만 — 아래 글(74%·80%·88%)과 안 겹치게
 
   MG.add([
@@ -129,8 +129,8 @@
       ],
       segs: function (p) {
         var S = [], its = lines(p.items, 12), e = +p.each || 3;
-        S.push({ d: 2.5, draw: function (ctx, tt, p, F) { ctx.fillStyle = p._trans ? 'rgba(0,0,0,0)' : F.grad(p._bg, hexA(p._c1, .35), true); ctx.fillRect(0, 0, F.W, F.H); F.deco(p._c1, p._c2, tt); F.text(p.title, F.cx, F.cy, { size: 110 * F.u, weight: 900, color: p._tx, maxW: F.W * .9, alpha: seg(tt, 0, .5) }); } });
-        its.forEach(function (l, i) { var a = l.split('|').map(function (x) { return x.trim(); }); S.push({ d: e, draw: function (ctx, tt, p, F) { var W = F.W, H = F.H, u = F.u; ctx.fillStyle = p._trans ? 'rgba(0,0,0,0)' : F.grad(p._bg, hexA(p._c1, .35), true); ctx.fillRect(0, 0, W, H); F.deco(p._c1, p._c2, tt); F.text(p.title + ' · ' + (i + 1) + '/' + its.length, F.cx, H * .14, { size: 40 * u, weight: 600, color: p._tx, alpha: .7 }); var g = E.back(seg(tt, 0, .7)); ctx.save(); ctx.translate(F.cx, F.cy); ctx.scale(Math.max(.01, g), Math.max(.01, g)); ctx.fillStyle = F.light(p._bg) && !p._trans ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.1)'; F.rr(-W * .36, -170 * u, W * .72, 340 * u, 30 * u); ctx.fill(); ctx.fillStyle = p._c2; F.rr(-60 * u, -170 * u, 120 * u, 10 * u, 5 * u); ctx.fill(); ctx.restore(); F.text(a[0] || '', F.cx, F.cy - 40 * u, { size: 130 * u, weight: 900, color: p._tx, maxW: W * .66, alpha: seg(tt, .3, .4) }); F.text(a[1] || '', F.cx, F.cy + 95 * u, { size: 50 * u, weight: 500, color: p._tx, maxW: W * .66, alpha: seg(tt, .5, .4) * .9 }); } }); });
+        S.push({ d: 2.5, draw: function (ctx, tt, p, F) { F.bg(p, tt); F.text(p.title, F.cx, F.cy, { size: 110 * F.u, weight: 900, color: p._tx, maxW: F.W * .9, alpha: seg(tt, 0, .5) }); } });
+        its.forEach(function (l, i) { var a = l.split('|').map(function (x) { return x.trim(); }); S.push({ d: e, draw: function (ctx, tt, p, F) { var W = F.W, H = F.H, u = F.u; F.bg(p, tt, null, { deco: false }); F.text(p.title + ' · ' + (i + 1) + '/' + its.length, F.cx, H * .14, { size: 40 * u, weight: 600, color: p._tx, alpha: .7 }); var g = E.back(seg(tt, 0, .7)); ctx.save(); ctx.translate(F.cx, F.cy); ctx.scale(Math.max(.01, g), Math.max(.01, g)); F.panel(-W * .36, -170 * u, W * .72, 340 * u, 30 * u, p); ctx.fillStyle = p._c2; F.rr(-60 * u, -170 * u, 120 * u, 10 * u, 5 * u); ctx.fill(); ctx.restore(); F.text(a[0] || '', F.cx, F.cy - 40 * u, { size: 130 * u, weight: 900, color: p._tx, maxW: W * .66, alpha: seg(tt, .3, .4) }); F.text(a[1] || '', F.cx, F.cy + 95 * u, { size: 50 * u, weight: 500, color: p._tx, maxW: W * .66, alpha: seg(tt, .5, .4) * .9 }); } }); });
         return S;
       },
       dur: function (p) { return stepsDur(this.segs(p)); }, marks: function (p) { return stepsMarks(this.segs(p)); },
@@ -149,7 +149,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx, ph = (t / 12) * Math.PI * 2;
-        if (!p._trans) { ctx.fillStyle = F.grad(p._bg, hexA(p._c1, .4), true); ctx.fillRect(0, 0, W, H); }
+        F.bg(p, t, p._c1);
         ctx.save(); ctx.globalAlpha = .16; F.circle(W * .82 + Math.sin(ph) * 40 * u, H * .25 + Math.cos(ph) * 30 * u, 340 * u, p._c1); F.circle(W * .15 + Math.cos(ph) * 40 * u, H * .8 + Math.sin(ph) * 30 * u, 280 * u, p._c2); ctx.restore();
         var br = 1 + Math.sin(ph) * .03, lh = 220 * u;
         ctx.save(); ctx.translate(cx, H * .22); ctx.scale(br, br);
@@ -174,14 +174,14 @@
       dur: function (p) { return 2 + lines(p.items, 5).length * (+p.each || 3) + 2; },
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx, its = lines(p.items, 5).map(function (l) { var a = l.split('|'); return a.length > 1 ? [a[0].trim(), a.slice(1).join('|').trim()] : ['ℹ️', l.trim()]; }), e = +p.each || 3;
-        if (!p._trans) { ctx.fillStyle = F.grad(p._bg, hexA(p._c2, .25), true); ctx.fillRect(0, 0, W, H); }
+        F.bg(p, t, p._c2);
         F.text(p.title, cx, H * .14, { size: 76 * u, weight: 800, color: p._tx, maxW: W * .9, alpha: seg(t, 0, .5) });
         var tall = H > W * 1.1, n = its.length || 1, top = H * .26, gap = Math.min((H * .68) / n, 170 * u);
         its.forEach(function (it, i) {
           var st = 2 + i * e, g = E.out(seg(t, st, .6)); if (g <= 0) return;
           var y = top + gap * i + gap / 2, cur = t >= st && t < st + e;
           ctx.save(); ctx.globalAlpha = g; ctx.translate((1 - g) * 60 * u, 0);
-          ctx.fillStyle = cur ? hexA(p._c1, .95) : (F.light(p._bg) && !p._trans ? 'rgba(255,255,255,.8)' : 'rgba(255,255,255,.1)'); F.rr(cx - W * .42, y - gap * .4, W * .84, gap * .8, 20 * u); ctx.fill();
+          ctx.fillStyle = cur ? hexA(p._c1, .95) : F.card(p); F.rr(cx - W * .42, y - gap * .4, W * .84, gap * .8, 20 * u); ctx.fill();
           ctx.font = (gap * .5) + 'px "Segoe UI Emoji","Apple Color Emoji",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(it[0], cx - W * .42 + gap * .5, y + 4 * u);
           F.text(it[1], cx - W * .42 + gap * .95, y, { size: Math.min(52 * u, gap * .36), weight: 700, color: cur ? '#fff' : p._tx, align: 'left', maxW: W * .84 - gap * 1.1 });
           ctx.restore();

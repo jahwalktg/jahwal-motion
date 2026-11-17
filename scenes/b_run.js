@@ -14,7 +14,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, dur = p.stay === 'y' ? 5 : 7;
-        if (!p._trans) { ctx.fillStyle = p._bg; ctx.fillRect(0, 0, W, H); }
+        F.bg(p, t, null, { plain: true });
         var gin = E.out(seg(t, 0, .7)), gout = p.stay === 'y' ? 0 : E.in(seg(t, dur - .7, .6));
         var barH = 150 * u, barW = Math.min(W * .62, 1000 * u), x0 = W * .06, y0 = H - barH - H * .1;
         var x = x0 - barW * (1 - gin) - barW * 1.2 * gout;
@@ -68,7 +68,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, total = (parseFloat(p.min) || 10) * 60, rem = Math.max(0, total - t);
-        ctx.fillStyle = p._bg; ctx.fillRect(0, 0, W, H); F.deco(p._c1, p._c2, t * .2);
+        if (p._trans) { ctx.fillStyle = p._bg; ctx.fillRect(0, 0, W, H); } F.bg(p, t * .2);
         F.text(p.msg, cx, cy - 330 * u, { size: 60 * u, weight: 600, color: p._tx, maxW: W * .85 });
         var R = 280 * u; ctx.save(); ctx.lineWidth = 22 * u; ctx.strokeStyle = hexA(p._c2, .25); ctx.beginPath(); ctx.arc(cx, cy + 20 * u, R, 0, Math.PI * 2); ctx.stroke();
         ctx.strokeStyle = rem < 60 ? '#E63946' : p._c1; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(cx, cy + 20 * u, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (rem / total)); ctx.stroke(); ctx.restore();
@@ -90,7 +90,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, dur = MG.BY.ticker.dur(p);
-        if (!p._trans) { ctx.fillStyle = p._bg; ctx.fillRect(0, 0, W, H); }
+        F.bg(p, t, null, { plain: true });
         var barH = 110 * u, y = p.pos === 't' ? H * .06 : H - barH - H * .06;
         ctx.fillStyle = p._trans ? 'rgba(26,43,80,.92)' : hexA(F.light(p._bg) ? '#1A2B50' : '#000', .85); ctx.fillRect(0, y, W, barH);
         ctx.font = F.font(800, 40 * u); var tagW = p.tag ? ctx.measureText(p.tag).width + 70 * u : 0;

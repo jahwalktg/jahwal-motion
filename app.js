@@ -7,7 +7,7 @@
   var CHROMA = '#00FF00'; // GIF 투명 배경용 키 색
   var KEY = 'jahwal.motion.v1';
 
-  var state = { scene: 'open', ratio: '16:9', c1: '#1A6EFF', c2: '#F28C28', bg: '#0E1630', bgMode: 'color', p: {}, playing: true, t: 0 };
+  var state = { scene: 'open', ratio: '16:9', theme: 'classic', c1: '#1A6EFF', c2: '#F28C28', bg: '#0E1630', bgMode: 'color', p: {}, playing: true, t: 0 };
   var images = { logo: null };   // 공통 로고
   var fieldImgs = {};            // 장면별 사진 (저장 안 함)
   var favs = {}; try { favs = JSON.parse(localStorage.getItem(KEY + '.fav') || '{}'); } catch (e) { }
@@ -17,15 +17,15 @@
   var lastTs = 0, raf = 0, busy = false;
 
   /* ---- 저장·복원(글자·색만, 사진·로고는 저장 안 함) ---- */
-  function save() { try { var o = { scene: state.scene, ratio: state.ratio, c1: state.c1, c2: state.c2, bg: state.bg, bgMode: state.bgMode, p: {} }; SCENES.forEach(function (s) { o.p[s.id] = state.p[s.id] || {}; }); localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) { } }
-  function load() { try { var o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o) { ['scene', 'ratio', 'c1', 'c2', 'bg', 'bgMode'].forEach(function (k) { if (o[k]) state[k] = o[k]; }); state.p = o.p || {}; } } catch (e) { } if (!S.BY[state.scene]) state.scene = 'open'; }
+  function save() { try { var o = { scene: state.scene, ratio: state.ratio, theme: state.theme, c1: state.c1, c2: state.c2, bg: state.bg, bgMode: state.bgMode, p: {} }; SCENES.forEach(function (s) { o.p[s.id] = state.p[s.id] || {}; }); localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) { } }
+  function load() { try { var o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o) { ['scene', 'ratio', 'theme', 'c1', 'c2', 'bg', 'bgMode'].forEach(function (k) { if (o[k]) state[k] = o[k]; }); if (!S.THEMES[state.theme]) state.theme = 'classic'; state.p = o.p || {}; } } catch (e) { } if (!S.BY[state.scene]) state.scene = 'open'; }
   function params(id) { var s = S.BY[id], p = state.p[id] || (state.p[id] = {}); s.fields.forEach(function (f) { if (f.type === 'image' || f.type === 'images') return; if (p[f.k] == null) p[f.k] = f.def == null ? '' : f.def; }); return p; }
   function dur(s, p) { return typeof s.dur === 'function' ? s.dur(p) : s.dur; }
   function textColor() { if (state.bgMode === 'trans') return '#1A2B50'; var h = state.bg.replace('#', ''), n = parseInt(h, 16); return (0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) > 160 ? '#1A2B50' : '#FFFFFF'; }
   function fullParams(id) {
     var p = Object.assign({}, params(id)); var s = S.BY[id];
     s.fields.forEach(function (f) { if (f.type === 'image') p[f.k] = fieldImgs[id + '.' + f.k] || null; if (f.type === 'images') p[f.k] = fieldImgs[id + '.' + f.k] || []; });
-    p._c1 = state.c1; p._c2 = state.c2; p._bg = state.bg; p._tx = textColor(); p._logo = images.logo; p._trans = state.bgMode === 'trans';
+    p._c1 = state.c1; p._c2 = state.c2; p._bg = state.bg; p._theme = state.theme; p._tx = textColor(); p._logo = images.logo; p._trans = state.bgMode === 'trans';
     return p;
   }
   /* 한 프레임 그리기: 캔버스 크기와 무관하게 논리 좌표(RATIOS)로 */
@@ -34,7 +34,7 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cw, ch);
     if (p._trans && chroma) { ctx.fillStyle = CHROMA; ctx.fillRect(0, 0, cw, ch); }
     ctx.save(); ctx.scale(cw / W, ch / H);
-    var F = S.makeF(ctx, W, H, FONT);
+    var F = S.makeF(ctx, W, H, FONT, state.theme);
     try { s.draw(ctx, Math.max(0, t), p, F); } catch (e) { console.error(e); }
     ctx.restore();
   }
@@ -86,11 +86,11 @@
     thumbTimer = 0; var n = 0;
     while (thumbQ.length && n < 4) {
       var cv = thumbQ.shift(), id = cv.dataset.th, sc = S.BY[id]; n++;
-      var key = id + '|' + state.c1 + state.c2 + state.bg + state.bgMode;
+      var key = id + '|' + state.theme + state.c1 + state.c2 + state.bg + state.bgMode;
       if (thumbCache[key]) { cv.getContext('2d').drawImage(thumbCache[key], 0, 0); continue; }
       var off = document.createElement('canvas'); off.width = 160; off.height = 90; var ctx = off.getContext('2d');
       var saveRatio = state.ratio; state.ratio = '16:9';
-      try { var p = fullParams(id), d = dur(sc, p); var t = sc.liveOnly ? 100 : Math.min(d * .62, d - .1); ctx.save(); ctx.scale(160 / 1920, 90 / 1080); if (p._trans) { ctx.fillStyle = '#333'; ctx.fillRect(0, 0, 1920, 1080); } sc.draw(ctx, t, p, S.makeF(ctx, 1920, 1080, FONT)); ctx.restore(); } catch (e) { }
+      try { var p = fullParams(id), d = dur(sc, p); var t = sc.liveOnly ? 100 : Math.min(d * .62, d - .1); ctx.save(); ctx.scale(160 / 1920, 90 / 1080); if (p._trans) { ctx.fillStyle = '#333'; ctx.fillRect(0, 0, 1920, 1080); } sc.draw(ctx, t, p, S.makeF(ctx, 1920, 1080, FONT, state.theme)); ctx.restore(); } catch (e) { }
       state.ratio = saveRatio; thumbCache[key] = off; cv.getContext('2d').drawImage(off, 0, 0);
     }
     if (thumbQ.length) thumbTimer = setTimeout(drawThumbs, 16);
@@ -123,7 +123,7 @@
     $('form').querySelectorAll('[data-k]').forEach(function (el) { el.addEventListener('input', function () { params(s.id)[el.dataset.k] = el.value; state.t = Math.min(state.t, dur(s, params(s.id))); save(); updateDurLabel(); }); });
     $('form').querySelectorAll('[data-img]').forEach(function (el) { el.addEventListener('change', function () { var f = el.files && el.files[0]; if (!f) return; loadImg(f, function (img) { fieldImgs[s.id + '.' + el.dataset.img] = img; state.t = 0; renderForm(); }); }); });
     $('form').querySelectorAll('[data-imgs]').forEach(function (el) { el.addEventListener('change', function () { var fs = [].slice.call(el.files || []).slice(0, 8); if (!fs.length) return; var out = new Array(fs.length), left = fs.length; fs.forEach(function (f, i) { loadImg(f, function (img) { out[i] = img; if (!--left) { fieldImgs[s.id + '.' + el.dataset.imgs] = out.filter(Boolean); state.t = 0; renderForm(); updateDurLabel(); } }); }); }); });
-    $('shareBtn').onclick = function () { var sp = new URLSearchParams(); var pp = params(s.id); s.fields.forEach(function (f) { if (f.type === 'image' || f.type === 'images') return; if (pp[f.k] != null && String(pp[f.k]) !== String(f.def == null ? '' : f.def)) sp.set(f.k, pp[f.k]); }); ['ratio', 'c1', 'c2', 'bg', 'bgMode'].forEach(function (k) { sp.set(k, state[k]); }); var url = location.origin + location.pathname + '#' + s.id + '&' + sp.toString(); copyText(url, '이 장면의 설정 링크를 복사했습니다. 동료에게 보내면 같은 화면이 열립니다(사진·로고는 빠짐).'); };
+    $('shareBtn').onclick = function () { var sp = new URLSearchParams(); var pp = params(s.id); s.fields.forEach(function (f) { if (f.type === 'image' || f.type === 'images') return; if (pp[f.k] != null && String(pp[f.k]) !== String(f.def == null ? '' : f.def)) sp.set(f.k, pp[f.k]); }); ['ratio', 'theme', 'c1', 'c2', 'bg', 'bgMode'].forEach(function (k) { sp.set(k, state[k]); }); var url = location.origin + location.pathname + '#' + s.id + '&' + sp.toString(); copyText(url, '이 장면의 설정 링크를 복사했습니다. 동료에게 보내면 같은 화면이 열립니다(사진·로고는 빠짐).'); };
     $('liveOnlyNote').hidden = !s.liveOnly; $('stepNote').hidden = !s.marks; $('dlBox').classList.toggle('dim', !!s.liveOnly);
     updateDurLabel();
   }
@@ -135,7 +135,16 @@
   function fmtT(x) { x = Math.max(0, x); var m = Math.floor(x / 60), s = x - m * 60; return m ? m + '분 ' + Math.floor(s) + '초' : (Math.round(s * 10) / 10) + '초'; }
 
   /* ---- 공통 설정 ---- */
+  function applyTheme(id, keepColors) {
+    var th = S.themeOf(id); state.theme = th.id; $('theme').value = th.id; $('themeNote').textContent = th.desc;
+    if (!keepColors) { state.c1 = th.palette.c1; state.c2 = th.palette.c2; state.bg = th.palette.bg; $('c1').value = state.c1; $('c2').value = state.c2; $('bg').value = state.bg; }
+    save(); refreshThumbs(); fontsReady().then(function () { refreshThumbs(); });
+  }
   function bindGlobals() {
+    $('theme').innerHTML = S.THEME_ORDER.map(function (id) { var th = S.THEMES[id]; return '<option value="' + id + '">' + th.name + '</option>'; }).join('');
+    $('theme').value = state.theme; $('themeNote').textContent = S.themeOf(state.theme).desc;
+    $('theme').onchange = function () { applyTheme(this.value, false); };
+    $('themeColors').onclick = function () { applyTheme(state.theme, false); };
     $('ratio').value = state.ratio; $('c1').value = state.c1; $('c2').value = state.c2; $('bg').value = state.bg; $('bgMode').value = state.bgMode;
     $('ratio').onchange = function () { state.ratio = this.value; fitPreview(); save(); };
     ['c1', 'c2', 'bg'].forEach(function (k) { $(k).oninput = function () { state[k] = this.value; save(); clearTimeout(thumbRe); thumbRe = setTimeout(refreshThumbs, 400); }; }); var thumbRe = 0;
@@ -184,7 +193,7 @@
   function progress(on, txt, pct) { $('prog').classList.toggle('on', !!on); if (txt != null) $('progTxt').textContent = txt; if (pct != null) $('progBar').style.width = Math.round(pct * 100) + '%'; }
   var cancelFlag = false; $('progCancel').onclick = function () { cancelFlag = true; };
   function yieldUI() { return new Promise(function (r) { setTimeout(r, 0); }); }
-  function fontsReady() { return Promise.all([document.fonts.load('900 40px Pretendard'), document.fonts.load('700 40px Pretendard'), document.fonts.load('500 40px Pretendard')]).catch(function () { }); }
+  function fontsReady() { var fam = (S.themeOf(state.theme).font || '').indexOf('Serif') >= 0 ? '"Noto Serif KR"' : 'Pretendard'; return Promise.all([document.fonts.load('900 40px ' + fam), document.fonts.load('700 40px ' + fam), document.fonts.load('500 40px ' + fam), document.fonts.load('700 40px Pretendard')]).catch(function () { }); }
   function liveOnlyGuard() { var s = S.BY[state.scene]; if (s.liveOnly) { toast('이 장면은 파일로 받지 않고 「전체화면으로 재생」으로 현장에서 바로 띄우는 장면입니다.'); return true; } return false; }
 
   // PNG(지금 보이는 순간)
@@ -272,7 +281,7 @@
   /* ---- 시작 ---- */
   load();
   var hraw = (location.hash || '').replace('#', ''), hashId = hraw.split('&')[0];
-  if (S.BY[hashId]) { state.scene = hashId; if (hraw.indexOf('&') > 0) { try { var sp = new URLSearchParams(hraw.slice(hraw.indexOf('&') + 1)); var pp = params(hashId); sp.forEach(function (v, k) { if (['ratio', 'c1', 'c2', 'bg', 'bgMode'].indexOf(k) >= 0) state[k] = v; else pp[k] = v; }); } catch (e) { } } }
+  if (S.BY[hashId]) { state.scene = hashId; if (hraw.indexOf('&') > 0) { try { var sp = new URLSearchParams(hraw.slice(hraw.indexOf('&') + 1)); var pp = params(hashId); sp.forEach(function (v, k) { if (['ratio', 'theme', 'c1', 'c2', 'bg', 'bgMode'].indexOf(k) >= 0) state[k] = v; else pp[k] = v; }); } catch (e) { } } }
   renderList(); renderForm(); bindGlobals(); fitPreview();
   window.addEventListener('resize', function () { fitPreview(); });
   if (!(window.VideoEncoder && window.Mp4Muxer)) $('mp4Note').hidden = false;

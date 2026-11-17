@@ -14,7 +14,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, tall = H > W * 1.1;
-        if (!p._trans) { ctx.fillStyle = F.grad(p._bg, hexA(p._c1, .4)); ctx.fillRect(0, 0, W, H); F.deco(p._c2, p._c1, t); }
+        F.bg(p, t, p._c1);
         var hasQ = !!(p.url && p.url.trim());
         var tx = hasQ && !tall ? W * .36 : cx, maxW = hasQ && !tall ? W * .56 : W * .86;
         var g1 = seg(t, .2, .8);
@@ -45,7 +45,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy;
-        if (!p._trans) { ctx.fillStyle = p._bg; ctx.fillRect(0, 0, W, H); }
+        F.bg(p, t, null, { plain: true });
         var r = rnd(2026), cols = [p._c1, p._c2, '#F2B705', '#E63946', '#1F9D5C', '#8A6BE0'], dur = 6;
         ctx.save();
         for (var i = 0; i < 160; i++) {

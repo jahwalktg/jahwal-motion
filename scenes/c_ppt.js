@@ -12,7 +12,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy;
-        if (!p._trans) { ctx.fillStyle = F.grad(p._bg, hexA(p._c1, .3), true); ctx.fillRect(0, 0, W, H); F.deco(p._c1, p._c2, t); }
+        F.bg(p, t, p._c1);
         var items = lines(p.items, 3).map(function (l) { var a = l.split('|').map(function (x) { return x.trim(); }); return { label: a[0] || '', num: fmtNum(a[1] || '0'), unit: a[2] || '' }; });
         var tall = H > W * 1.1, n = items.length || 1;
         F.text(p.title, cx, H * (tall ? .14 : .17), { size: 72 * u, weight: 800, color: p._tx, maxW: W * .86, alpha: seg(t, 0, .6) });
@@ -21,7 +21,7 @@
           var x, y, boxW;
           if (tall) { x = cx; y = H * .3 + i * (H * .62 / n) + (H * .62 / n) / 2; boxW = W * .82; }
           else { boxW = Math.min(W * .9 / n - 30 * u, 560 * u); x = cx + (i - (n - 1) / 2) * (boxW + 40 * u); y = cy + 60 * u; }
-          ctx.save(); ctx.globalAlpha = ga; ctx.fillStyle = F.light(p._bg) && !p._trans ? 'rgba(255,255,255,.8)' : 'rgba(255,255,255,.1)'; F.rr(x - boxW / 2, y - 170 * u, boxW, 340 * u, 26 * u); ctx.fill();
+          ctx.save(); ctx.globalAlpha = ga; F.panel(x - boxW / 2, y - 170 * u, boxW, 340 * u, 26 * u, p);
           ctx.fillStyle = p._c2; F.rr(x - 40 * u, y - 170 * u, 80 * u, 8 * u, 4 * u); ctx.fill(); ctx.restore();
           F.text(it.label, x, y - 95 * u, { size: 44 * u, weight: 600, color: p._tx, maxW: boxW - 60 * u, alpha: ga });
           var v = it.num ? withComma(it.num.v * g, it.num.dec) : '';
@@ -43,7 +43,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx;
-        if (!p._trans) { ctx.fillStyle = F.grad(p._bg, hexA(p._c2, .2), true); ctx.fillRect(0, 0, W, H); }
+        F.bg(p, t, p._c2);
         var items = lines(p.items, 5).map(function (l) { var a = l.split('|').map(function (x) { return x.trim(); }); return { label: a[0] || '', num: fmtNum(a[1] || '0') || { v: 0, dec: 0, pre: '', suf: '' } }; });
         var n = items.length || 1, mx = Math.max.apply(null, items.map(function (i) { return Math.abs(i.num.v); }).concat([1]));
         var tall = H > W * 1.1;

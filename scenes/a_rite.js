@@ -14,7 +14,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx;
-        if (!p._trans) { ctx.fillStyle = F.grad(p._bg, hexA(p._c1, .35), true); ctx.fillRect(0, 0, W, H); F.deco(p._c1, p._c2, t); }
+        F.bg(p, t, p._c1);
         var tall = H > W * 1.1;
         var a1 = E.back(seg(t, .15, .9)), al = seg(t, .15, .5);
         var logoH = (tall ? 300 : 260) * u, logoY = (tall ? H * .22 : H * .18);
@@ -41,7 +41,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, n = parseInt(p.n, 10) || 5;
-        if (!p._trans) { ctx.fillStyle = p._bg; ctx.fillRect(0, 0, W, H); F.deco(p._c1, p._c2, t); }
+        F.bg(p, t, null, { plain: true });
         F.text(p.top, cx, cy - 330 * u, { size: 56 * u, weight: 600, color: p._tx, maxW: W * .8, alpha: seg(t, 0, .5) * .9 });
         var R = 250 * u;
         if (t < n) {
@@ -67,7 +67,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx, items = lines(p.items, 6), n = items.length || 1;
-        if (!p._trans) { ctx.fillStyle = F.grad(p._bg, hexA(p._c1, .25), true); ctx.fillRect(0, 0, W, H); F.deco(p._c1, p._c2, t); }
+        F.bg(p, t, p._c1);
         var tall = H > W * 1.1;
         F.text(p.title, cx, H * (tall ? .12 : .14) - (1 - E.out(seg(t, 0, .6))) * 30 * u, { size: 84 * u, weight: 800, color: p._tx, maxW: W * .86, alpha: seg(t, 0, .6) });
         var top = H * (tall ? .22 : .27), avail = H * (tall ? .72 : .66), gap = Math.min(avail / n, (tall ? 180 : 150) * u), size = Math.min(60 * u, gap * .42);
@@ -76,7 +76,7 @@
           var g = E.out(seg(t, 1.0 + i * .8, .6)), y = top + gap * i + gap / 2;
           if (g <= 0) return;
           ctx.save(); ctx.globalAlpha = g; ctx.translate((1 - g) * -60 * u, 0);
-          ctx.fillStyle = F.light(p._bg) && !p._trans ? 'rgba(255,255,255,.85)' : 'rgba(255,255,255,.10)'; F.rr(x0, y - gap * .38, boxW, gap * .76, 18 * u); ctx.fill();
+          F.panel(x0, y - gap * .38, boxW, gap * .76, 18 * u, p);
           F.circle(x0 + gap * .38, y, gap * .27, p._c1);
           F.text(String(i + 1), x0 + gap * .38, y + 2 * u, { size: gap * .3, weight: 800, color: '#fff' });
           F.text(s, x0 + gap * .8, y, { size: size, weight: 700, color: p._tx, align: 'left', maxW: boxW - gap * 1.0 });

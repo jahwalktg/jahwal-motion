@@ -4,7 +4,6 @@
   function stepsDur(segs) { return segs.reduce(function (a, s) { return a + s.d; }, 0); }
   function stepsMarks(segs) { var t = 0, m = []; segs.forEach(function (s, i) { if (i) m.push(t); t += s.d; }); return m; }
   function drawSteps(segs, ctx, t, p, F) { var acc = 0; for (var i = 0; i < segs.length; i++) { if (t < acc + segs[i].d || i === segs.length - 1) { segs[i].draw(ctx, Math.min(t - acc, segs[i].d), p, F); return; } acc += segs[i].d; } }
-  function bg(ctx, p, F, t, c) { if (p._trans) return; ctx.fillStyle = F.grad(p._bg, hexA(c || p._c1, .35), true); ctx.fillRect(0, 0, F.W, F.H); F.deco(p._c1, p._c2, t); }
   function sparkle(ctx, F, t, n, seed, a0) { var r = rnd(seed || 7); ctx.save(); for (var i = 0; i < n; i++) { var sx = r() * F.W, sy = r() * F.H, ph = r() * 6.28, sp = .6 + r(); var a = (Math.sin(t * sp * 3 + ph) + 1) / 2 * (a0 == null ? 1 : a0); ctx.globalAlpha = a * .8; F.circle(sx, sy, (2 + r() * 4) * F.u, '#fff'); } ctx.restore(); }
   function confetti(ctx, F, t, p, dur, n) { var r = rnd(2026), cols = [p._c1, p._c2, '#F2B705', '#E63946', '#1F9D5C', '#8A6BE0'], W = F.W, H = F.H, u = F.u; ctx.save(); for (var i = 0; i < n; i++) { var x0 = r() * W, sp = (.6 + r() * .6), ph = r() * dur, w = (10 + r() * 14) * u, h = (14 + r() * 20) * u, col = cols[Math.floor(r() * cols.length)], sw = (r() - .5) * 2, rot = r() * 6.28, rs = (r() - .5) * 6; var tt = ((t + ph) % dur) / dur; var y = -h * 2 + tt * (H + h * 4) * sp / .9, x = x0 + Math.sin(tt * 6.28 * 2 + ph) * 60 * u * sw; ctx.save(); ctx.translate(x, y); ctx.rotate(rot + tt * rs); ctx.scale(Math.cos(tt * 6.28 * 3 + ph), 1); ctx.fillStyle = col; ctx.globalAlpha = .95; ctx.fillRect(-w / 2, -h / 2, w, h); ctx.restore(); } ctx.restore(); }
   function emoji(ctx, s, x, y, size) { ctx.font = size + 'px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, x, y); }
@@ -24,7 +23,7 @@
         var S = [], its = lines(p.names, 8).map(function (l) { var a = l.split('|').map(function (x) { return x.trim(); }); return [a[0] || '', a[1] || '']; }), e = +p.each || 2.5;
         function panel(ctx, tt, p, F, upto, cur) {
           var W = F.W, H = F.H, u = F.u, cx = F.cx;
-          bg(ctx, p, F, tt, p._c2); sparkle(ctx, F, tt, 30, 11, .7);
+          F.bg(p, tt, p._c2); sparkle(ctx, F, tt, 30, 11, .7);
           var g = E.back(seg(tt, 0, .6));
           F.text('🏆', cx, H * .13, { size: 70 * u, color: '#fff', alpha: 1 });
           ctx.save(); ctx.translate(cx, H * .24); ctx.scale(upto < 0 ? Math.max(.01, g) : 1, upto < 0 ? Math.max(.01, g) : 1); F.text(p.prize, 0, 0, { size: 96 * u, weight: 900, color: p._tx, maxW: W * .85, shadow: true }); ctx.restore();
@@ -33,7 +32,7 @@
           for (var i = 0; i < n; i++) {
             var a = i === cur ? E.back(seg(tt, 0, .6)) : 1, y = top + gap * i + gap / 2, isCur = i === cur;
             ctx.save(); ctx.globalAlpha = clamp(a, 0, 1); ctx.translate(cx, y); ctx.scale(Math.max(.01, a), Math.max(.01, a));
-            ctx.fillStyle = isCur ? hexA(p._c1, .95) : (F.light(p._bg) && !p._trans ? 'rgba(255,255,255,.8)' : 'rgba(255,255,255,.12)'); F.rr(-W * .3, -gap * .42, W * .6, gap * .84, 18 * u); ctx.fill();
+            ctx.fillStyle = isCur ? hexA(p._c1, .95) : F.card(p); F.rr(-W * .3, -gap * .42, W * .6, gap * .84, 18 * u); ctx.fill();
             F.text(its[i][0], -W * .3 + 40 * u, 0, { size: Math.min(60 * u, gap * .5), weight: 800, color: isCur ? '#fff' : p._tx, align: 'left', maxW: W * .32 });
             F.text(its[i][1], W * .3 - 40 * u, 0, { size: Math.min(36 * u, gap * .32), weight: 500, color: isCur ? '#fff' : p._tx, align: 'right', maxW: W * .24, alpha: .9 });
             ctx.restore();
@@ -60,7 +59,7 @@
       dur: function (p) { var n = lines(p.names, 60).length, c = +p.cols || 1; return 2 + Math.ceil(n / c) * 1.1 / (+p.speed || 1) + 4; },
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx, its = lines(p.names, 60), c = +p.cols || 1, sp = +p.speed || 1, rows = Math.ceil(its.length / c), lh = 96 * u;
-        bg(ctx, p, F, t);
+        F.bg(p, t);
         var dur = this.dur(p), scrollDur = dur - 6, total = rows * lh;
         var prog = clamp((t - 2) / scrollDur, 0, 1), y0 = H + 60 * u - prog * (total + H * .6 + 60 * u);
         ctx.save(); ctx.beginPath(); ctx.rect(0, H * .2, W, H * .8); ctx.clip();
@@ -85,16 +84,16 @@
       ],
       segs: function (p) {
         var S = [], ts = lines(p.items, 10).map(function (l) { var a = l.split('|'); return { name: (a[0] || '').trim(), m: (a.slice(1).join('|') || '').split(/[,，·、]/).map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 12) }; }), e = +p.each || 4;
-        S.push({ d: 2, draw: function (ctx, tt, p, F) { bg(ctx, p, F, tt); F.text(p.title, F.cx, F.cy, { size: 110 * F.u, weight: 900, color: p._tx, maxW: F.W * .9, alpha: seg(tt, 0, .5) }); F.text('총 ' + ts.length + '개 조', F.cx, F.cy + 130 * F.u, { size: 50 * F.u, weight: 500, color: p._tx, alpha: seg(tt, .6, .5) * .8 }); } });
+        S.push({ d: 2, draw: function (ctx, tt, p, F) { F.bg(p, tt); F.text(p.title, F.cx, F.cy, { size: 110 * F.u, weight: 900, color: p._tx, maxW: F.W * .9, alpha: seg(tt, 0, .5) }); F.text('총 ' + ts.length + '개 조', F.cx, F.cy + 130 * F.u, { size: 50 * F.u, weight: 500, color: p._tx, alpha: seg(tt, .6, .5) * .8 }); } });
         ts.forEach(function (tm, i) {
           S.push({ d: e, draw: function (ctx, tt, p, F) {
-            var W = F.W, H = F.H, u = F.u, cx = F.cx; bg(ctx, p, F, tt);
+            var W = F.W, H = F.H, u = F.u, cx = F.cx; F.bg(p, tt);
             F.text(p.title + ' · ' + (i + 1) + '/' + ts.length, cx, H * .1, { size: 36 * u, weight: 600, color: p._tx, alpha: .7 });
             var g = E.out(seg(tt, 0, .5)); ctx.save(); ctx.globalAlpha = g; ctx.translate((1 - g) * 80 * u, 0);
             ctx.fillStyle = p._c1; F.rr(cx - 200 * u, H * .17, 400 * u, 110 * u, 55 * u); ctx.fill();
             F.text(tm.name, cx, H * .17 + 55 * u, { size: 60 * u, weight: 900, color: '#fff', maxW: 340 * u });
             var n = tm.m.length, cols = n > 6 ? 3 : n > 3 ? 2 : 1, rows = Math.ceil(n / cols), boxW = W * .8 / cols, gap = Math.min((H * .52) / rows, 130 * u), top = H * .36;
-            tm.m.forEach(function (nm, k) { var a = seg(tt, .3 + k * .12, .4), r = Math.floor(k / cols), c = k % cols, x = cx - W * .4 + boxW * c + boxW / 2, y = top + gap * r + gap / 2; ctx.save(); ctx.globalAlpha = a * g; ctx.fillStyle = F.light(p._bg) && !p._trans ? 'rgba(255,255,255,.85)' : 'rgba(255,255,255,.12)'; F.rr(x - boxW / 2 + 12 * u, y - gap * .4, boxW - 24 * u, gap * .8, 16 * u); ctx.fill(); ctx.restore(); F.text(nm, x, y, { size: Math.min(56 * u, gap * .45), weight: 800, color: p._tx, maxW: boxW - 60 * u, alpha: a * g }); });
+            tm.m.forEach(function (nm, k) { var a = seg(tt, .3 + k * .12, .4), r = Math.floor(k / cols), c = k % cols, x = cx - W * .4 + boxW * c + boxW / 2, y = top + gap * r + gap / 2; ctx.save(); ctx.globalAlpha = a * g; F.panel(x - boxW / 2 + 12 * u, y - gap * .4, boxW - 24 * u, gap * .8, 16 * u, p); ctx.restore(); F.text(nm, x, y, { size: Math.min(56 * u, gap * .45), weight: 800, color: p._tx, maxW: boxW - 60 * u, alpha: a * g }); });
             ctx.restore();
             F.text(p.note, cx, H * .93, { size: 34 * u, weight: 500, color: p._tx, maxW: W * .9, alpha: .6 });
           } });
@@ -115,7 +114,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, total = (parseFloat(p.min) || 10) * 60, rem = Math.max(0, total - t), m = Math.floor(rem / 60), s = Math.floor(rem % 60), txt = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
-        if (!p._trans) { ctx.fillStyle = p._bg; ctx.fillRect(0, 0, W, H); }
+        F.bg(p, t, null, { plain: true });
         var big = p.pos === 'c', R = big ? 260 * u : 110 * u, x = big ? F.cx : W - R - 60 * u, y = big ? F.cy : (p.pos === 'tr' ? R + 60 * u : H - R - 60 * u);
         var col = rem <= 60 ? '#E63946' : p._c1;
         ctx.save(); ctx.globalAlpha = .9; F.circle(x, y, R + 14 * u, p._trans ? 'rgba(20,30,60,.85)' : hexA(F.light(p._bg) ? '#1A2B50' : '#000', .5)); ctx.restore();
@@ -136,7 +135,7 @@
         { k: 'icon', label: '아이콘(이모지)', def: '⏰', max: 2 }
       ],
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u; if (!p._trans) { ctx.fillStyle = p._bg; ctx.fillRect(0, 0, W, H); }
+        var W = F.W, H = F.H, u = F.u; F.bg(p, t, null, { plain: true });
         var gin = E.back(seg(t, 0, .6)), gout = E.in(seg(t, 4.3, .6)), bw = Math.min(W * .5, 760 * u), bh = 150 * u, x = W - 60 * u - bw + (1 - gin) * (bw + 80 * u) + gout * (bw + 80 * u), y = H - 60 * u - bh;
         ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 24 * u; ctx.fillStyle = '#fff'; F.rr(x, y, bw, bh, 24 * u); ctx.fill(); ctx.restore();
         ctx.fillStyle = p._c1; F.rr(x, y, 14 * u, bh, 7 * u); ctx.fill();
@@ -156,7 +155,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx, hasQ = !!(p.url && p.url.trim() && window.qrcode), tall = H > W * 1.1;
-        bg(ctx, p, F, t);
+        F.bg(p, t);
         var tx = hasQ && !tall ? W * .36 : cx, maxW = hasQ && !tall ? W * .56 : W * .86;
         var wob = Math.sin(t * 4) * 12; ctx.save(); ctx.translate(tx, tall ? H * .2 : H * .28); ctx.rotate(wob * Math.PI / 180); emoji(ctx, '🙋', 0, 0, 170 * u); ctx.restore();
         F.para(p.title, tx, tall ? H * .4 : H * .52, { size: 104 * u, weight: 900, color: p._tx, maxW: maxW, maxLines: 2, alpha: seg(t, .2, .6) });
@@ -177,7 +176,7 @@
       segs: function (p) {
         var os = lines(p.opts, 4), ans = clamp(parseInt(p.ans, 10) || 1, 1, os.length) - 1, th = +p.think || 5;
         function board(ctx, tt, p, F, reveal, drum) {
-          var W = F.W, H = F.H, u = F.u, cx = F.cx; bg(ctx, p, F, tt);
+          var W = F.W, H = F.H, u = F.u, cx = F.cx; F.bg(p, tt);
           F.para(p.q, cx, H * .2, { size: 64 * u, weight: 800, color: p._tx, maxW: W * .88, maxLines: 3, alpha: seg(tt, 0, .5) });
           var n = os.length, top = H * .38, gap = Math.min((H * .56) / n, 140 * u), boxW = Math.min(W * .78, 1200 * u);
           os.forEach(function (o, i) {
@@ -185,7 +184,7 @@
             var jig = drum ? Math.sin(tt * 25 + i) * 6 * u : 0;
             ctx.save(); ctx.globalAlpha = a * (dim ? .35 : 1); ctx.translate(jig, 0);
             var sc = hit ? 1 + .06 * Math.abs(Math.sin(tt * 5)) : 1; ctx.translate(cx, y); ctx.scale(sc, sc);
-            ctx.fillStyle = hit ? '#1F9D5C' : (F.light(p._bg) && !p._trans ? 'rgba(255,255,255,.85)' : 'rgba(255,255,255,.12)'); F.rr(-boxW / 2, -gap * .4, boxW, gap * .8, 20 * u); ctx.fill();
+            ctx.fillStyle = hit ? '#1F9D5C' : F.card(p); F.rr(-boxW / 2, -gap * .4, boxW, gap * .8, 20 * u); ctx.fill();
             F.circle(-boxW / 2 + gap * .4, 0, gap * .27, hit ? '#fff' : p._c1); F.text(hit ? '✓' : String(i + 1), -boxW / 2 + gap * .4, 2 * u, { size: gap * .3, weight: 800, color: hit ? '#1F9D5C' : '#fff' });
             F.text(o, -boxW / 2 + gap * .8, 0, { size: Math.min(50 * u, gap * .4), weight: 700, color: hit ? '#fff' : p._tx, align: 'left', maxW: boxW - gap * 1.0 });
             ctx.restore();
@@ -214,7 +213,7 @@
         { k: 'back', label: '돌아올 시간 글', def: '13:00까지 자리로 돌아와 주세요', max: 40 }
       ],
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx; bg(ctx, p, F, t, p._c2);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx; F.bg(p, t, p._c2);
         var sway = Math.sin(t * 2) * 6; ctx.save(); ctx.translate(cx, H * .17); ctx.rotate(sway * Math.PI / 180); emoji(ctx, '🍱', 0, 0, 120 * u); ctx.restore();
         F.text(p.title, cx, H * .34, { size: 84 * u, weight: 900, color: p._tx, maxW: W * .9, alpha: seg(t, .2, .5) });
         var rows = [['🕛', p.time, .6], ['📍', p.place, 1.0]].concat(lines(p.menu, 3).map(function (m, i) { return ['🍽️', m, 1.4 + i * .3]; }));
@@ -234,7 +233,7 @@
       ],
       marks: function () { return [4]; },
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy; bg(ctx, p, F, t);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy; F.bg(p, t);
         if (t < 4) {
           emoji(ctx, '📸', cx, H * .25, 150 * u);
           F.text(p.title, cx, H * .5, { size: 90 * u, weight: 900, color: p._tx, maxW: W * .9, alpha: seg(t, .2, .5) });
@@ -264,7 +263,7 @@
       ],
       dur: 11, marks: function () { return [3]; },
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy; bg(ctx, p, F, t, p._c2);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy; F.bg(p, t, p._c2);
         var pool = p.mode === 'l' ? lines(p.names, 60) : null, N = Math.max(2, parseInt(p.max, 10) || 100), r = rnd(99);
         F.text(p.title, cx, H * .14, { size: 76 * u, weight: 800, color: p._tx, maxW: W * .9 });
         if (p.prize) F.text('🎁 ' + p.prize, cx, H * .25, { size: 44 * u, weight: 600, color: p._tx, maxW: W * .8, alpha: .85 });
@@ -273,7 +272,7 @@
         if (done) txt = p.win;
         else { var speed = 2 + 38 * spin * spin, idx = Math.floor(t * speed * 7 + r() * 100); txt = pool ? pool[idx % pool.length] : String(1 + (idx * 37) % N); }
         var g = done ? E.back(seg(t, 7, .6)) : 1;
-        ctx.save(); ctx.translate(cx, cy + 40 * u); ctx.scale(g, g); ctx.fillStyle = done ? '#F2B705' : (F.light(p._bg) && !p._trans ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.12)'); F.rr(-W * .3, -150 * u, W * .6, 300 * u, 40 * u); ctx.fill();
+        ctx.save(); ctx.translate(cx, cy + 40 * u); ctx.scale(g, g); ctx.fillStyle = done ? '#F2B705' : F.card(p); F.rr(-W * .3, -150 * u, W * .6, 300 * u, 40 * u); ctx.fill();
         F.text(txt, 0, 0, { size: pool ? 150 * u : 220 * u, weight: 900, color: done ? '#1A2B50' : p._tx, maxW: W * .54 }); ctx.restore();
         if (t < 3) F.text('두구두구…', cx, H * .85, { size: 48 * u, weight: 700, color: p._tx, alpha: .5 + .5 * Math.sin(t * 8) });
         else if (!done) F.text('멈춥니다…', cx, H * .85, { size: 48 * u, weight: 700, color: p._tx, alpha: .8 });

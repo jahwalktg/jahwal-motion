@@ -1,7 +1,6 @@
 /* 즉석 모션그래픽 — 장면: 의식·개회 (3차) 개회·폐회 선언·휴대폰·촬영 안내·로고 대기 */
 (function () {
   var E = MG.E, seg = MG.seg, lerp = MG.lerp, clamp = MG.clamp, rnd = MG.rnd, lines = MG.lines, hexA = MG.hexA;
-  function bg(ctx, p, F, t, c) { if (p._trans) return; ctx.fillStyle = F.grad(p._bg, hexA(c || p._c1, .35), true); ctx.fillRect(0, 0, F.W, F.H); F.deco(p._c1, p._c2, t); }
   function emoji(ctx, s, x, y, size) { ctx.font = size + 'px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, x, y); }
 
   MG.add([
@@ -16,7 +15,7 @@
         { k: 'who', label: '선언하는 분(선택)', def: '', max: 30 }
       ],
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy; bg(ctx, p, F, t);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy; F.bg(p, t);
         var words = { open: '개회를 선언합니다', close: '폐회를 선언합니다', start: '지금부터 시작합니다' }, main = p.kind === 'custom' ? p.text : words[p.kind] || words.open;
         var g1 = E.out(seg(t, 0, .6)), hit = seg(t, 1.0, .35), gb = E.back(hit), glow = Math.max(0, 1 - seg(t, 1.3, 1.2));
         F.text(p.title, cx, cy - 200 * u + (1 - g1) * 40 * u, { size: 60 * u, weight: 700, color: p._tx, maxW: W * .86, alpha: g1 * .9 });
@@ -36,14 +35,14 @@
         { k: 'items', label: '항목(한 줄에 「이모지 | 글」, 4개까지)', type: 'lines', def: '📵 | 휴대폰은 진동이나 무음으로\n📷 | 사진·영상 촬영은 자유롭게\n🚪 | 비상구는 양쪽 뒤편', max: 4 }
       ],
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, tall = H > W * 1.1; bg(ctx, p, F, t);
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, tall = H > W * 1.1; F.bg(p, t);
         var its = lines(p.items, 4).map(function (l) { var a = l.split('|').map(function (x) { return x.trim(); }); return a.length > 1 ? { e: a[0], t: a.slice(1).join(' ') } : { e: '🔔', t: a[0] }; }), n = its.length || 1, each = 9 / n, cur = Math.floor((t % 9) / each), f = ((t % 9) - cur * each) / each;
         F.text(p.title, cx, tall ? H * .12 : H * .15, { size: 64 * u, weight: 800, color: p._tx, maxW: W * .9 });
         its.forEach(function (it, i) {
           var x, y; if (tall) { x = cx; y = H * .25 + i * (H * .5 / n) + (H * .5 / n) / 2; } else { var slot = W * .8 / n; x = cx - W * .4 + slot * i + slot / 2; y = cy + 10 * u; }
           var on = i === cur, pop = on ? 1 + Math.sin(f * Math.PI) * .18 : 1, R = Math.min(170 * u, (tall ? H * .5 / n : W * .8 / n) * .36);
           ctx.save(); ctx.globalAlpha = on ? 1 : .45; ctx.translate(x, y); ctx.scale(pop, pop);
-          ctx.fillStyle = on ? hexA(p._c1, .95) : (F.light(p._bg) && !p._trans ? 'rgba(255,255,255,.8)' : 'rgba(255,255,255,.12)'); ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = on ? hexA(p._c1, .95) : F.card(p); ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
           emoji(ctx, it.e, 0, 6 * u, R * 1.05); ctx.restore();
         });
         var it = its[cur] || its[0]; ctx.save(); ctx.globalAlpha = Math.min(1, Math.sin(f * Math.PI) * 2.5); F.text(it ? it.t : '', cx, tall ? H * .86 : H * .82, { size: 58 * u, weight: 700, color: p._tx, maxW: W * .88 }); ctx.restore();
@@ -61,7 +60,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, ph = (t / 6) * Math.PI * 2;
-        if (!p._trans) { ctx.fillStyle = F.grad(p._bg, hexA(p._c1, .3), true); ctx.fillRect(0, 0, W, H); ctx.save(); ctx.globalAlpha = .12; F.circle(cx, cy, (520 + Math.sin(ph) * 30) * u, p._c1); ctx.restore(); }
+        if (!p._trans) { F.bg(p, t, p._c1, { deco: false }); ctx.save(); ctx.globalAlpha = .12; F.circle(cx, cy, (520 + Math.sin(ph) * 30) * u, p._c1); ctx.restore(); }
         var br = 1 + Math.sin(ph) * .05, box = 420 * u, ly = cy - (p.text ? 40 * u : 0);
         if (p.mode === 'ring') { ctx.save(); ctx.translate(cx, ly); ctx.rotate(ph); ctx.lineWidth = 14 * u; ctx.lineCap = 'round'; ctx.strokeStyle = hexA(p._tx, .12); ctx.beginPath(); ctx.arc(0, 0, box * .78, 0, Math.PI * 2); ctx.stroke(); ctx.strokeStyle = p._c1; ctx.beginPath(); ctx.arc(0, 0, box * .78, 0, Math.PI * .6); ctx.stroke(); ctx.strokeStyle = p._c2; ctx.beginPath(); ctx.arc(0, 0, box * .78, Math.PI, Math.PI * 1.35); ctx.stroke(); ctx.restore(); }
         ctx.save(); ctx.translate(cx, ly); ctx.scale(br, br);

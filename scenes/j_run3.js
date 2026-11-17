@@ -17,7 +17,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, dur = p.stay === 'y' ? 5 : 7;
-        if (!p._trans) { ctx.fillStyle = p._bg; ctx.fillRect(0, 0, W, H); }
+        F.bg(p, t, null, { plain: true });
         var gin = E.out(seg(t, 0, .6)), gout = p.stay === 'y' ? 0 : E.in(seg(t, dur - .7, .6)), a = Math.min(gin, 1 - gout);
         ctx.font = F.font(800, 46 * u); var tw = Math.min(W * .7, ctx.measureText(p.title).width + 60 * u); ctx.font = F.font(600, 30 * u); var lw = Math.max(ctx.measureText(p.lead).width + 40 * u, 120 * u), tmw = p.time ? ctx.measureText(p.time).width + 40 * u : 0;
         var bw = Math.max(tw, lw + tmw + 30 * u), bh = 150 * u, right = p.pos === 'br' || p.pos === 'tr', top = p.pos === 'tr';
@@ -43,7 +43,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, n = clamp(+p.n || 3, 1, 5), ph = (t / 3) * Math.PI * 2;
-        if (!p._trans) { ctx.fillStyle = F.grad(p._bg, hexA(p._c1, .35), true); ctx.fillRect(0, 0, W, H); }
+        F.bg(p, t, p._c1);
         var r = rnd(5); ctx.save(); for (var i = 0; i < 24; i++) { var sx = r() * W, sy = r() * H, o = r() * 6.28; ctx.globalAlpha = (Math.sin(t * 6 + o) + 1) / 2 * .5; F.circle(sx, sy, (3 + r() * 5) * u, i % 2 ? p._c2 : '#F2B705'); } ctx.restore();
         for (var k = 0; k < n; k++) { var x = cx + (k - (n - 1) / 2) * 240 * u, b = Math.abs(Math.sin(ph * 2 + k * 1.1)), y = cy - 120 * u - b * 60 * u, sc = 1 + b * .15; ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc); ctx.rotate((k % 2 ? -1 : 1) * Math.sin(ph * 2 + k) * .12); emoji(ctx, '👏', 0, 0, 180 * u); ctx.restore(); }
         var bounce = 1 + Math.abs(Math.sin(ph * 2)) * .06;
@@ -65,7 +65,7 @@
       marks: function (p) { var t = 0, m = []; this.items(p).forEach(function (it, i) { if (i) m.push(t); t += it.d; }); return m; },
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx, its = this.items(p);
-        if (!p._trans) { ctx.fillStyle = p._bg; ctx.fillRect(0, 0, W, H); if (F.light(p._bg)) { ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0, 0, W, H); } }
+        if (!p._trans) { F.bg(p, t, null, { plain: true }); if (F.light(p._bg)) { ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0, 0, W, H); } }
         var acc = 0, cur = its[its.length - 1], f = 1; for (var i = 0; i < its.length; i++) { if (t < acc + its[i].d) { cur = its[i]; f = (t - acc) / its[i].d; break; } acc += its[i].d; }
         if (!cur) return;
         var two = !!cur.b, bh = (two ? 190 : 120) * u, y0 = H - bh - H * .07, a = Math.min(1, seg(f * cur.d, 0, .3) * 1) * (1 - seg(f * cur.d, cur.d - .25, .25) * (cur === its[its.length - 1] ? 0 : 1));

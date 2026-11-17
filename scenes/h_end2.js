@@ -15,7 +15,7 @@
       ],
       draw: function (ctx, t, p, F) {
         var W = F.W, H = F.H, u = F.u, cx = F.cx, cy = F.cy, tall = H > W * 1.1, ph = (t / 8) * Math.PI * 2;
-        if (!p._trans) { ctx.fillStyle = F.grad(p._bg, hexA(p._c1, .35)); ctx.fillRect(0, 0, W, H); ctx.save(); ctx.globalAlpha = .15; F.circle(W * .85 + Math.sin(ph) * 20 * u, H * .2, 320 * u, p._c1); F.circle(W * .12, H * .85 + Math.cos(ph) * 20 * u, 260 * u, p._c2); ctx.restore(); }
+        if (!p._trans) { F.bg(p, t, p._c1, { deco: false }); ctx.save(); ctx.globalAlpha = .15; F.circle(W * .85 + Math.sin(ph) * 20 * u, H * .2, 320 * u, p._c1); F.circle(W * .12, H * .85 + Math.cos(ph) * 20 * u, 260 * u, p._c2); ctx.restore(); }
         var qx = tall ? cx : W * .3, qy = tall ? H * .42 : cy + 20 * u, qs = (tall ? 620 : 560) * u, tx = tall ? cx : W * .7, maxW = tall ? W * .9 : W * .5;
         if (window.qrcode && p.url && p.url.trim()) { try { var q = window.qrcode(0, 'M'); q.addData(p.url.trim()); q.make(); var cnt = q.getModuleCount(), pad = 30 * u, cell = (qs - pad * 2) / cnt; ctx.save(); ctx.translate(qx - qs / 2, qy - qs / 2); ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 30 * u; ctx.fillStyle = '#fff'; F.rr(0, 0, qs, qs, 28 * u); ctx.fill(); ctx.shadowColor = 'transparent'; ctx.fillStyle = '#1A2B50'; for (var r = 0; r < cnt; r++) for (var c = 0; c < cnt; c++) if (q.isDark(r, c)) ctx.fillRect(pad + c * cell, pad + r * cell, cell + .5, cell + .5); ctx.restore(); } catch (e) { F.text('주소가 너무 깁니다', qx, qy, { size: 40 * u, color: p._tx }); } }
         // 스캔 선

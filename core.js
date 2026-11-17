@@ -25,9 +25,15 @@
   function withComma(v, dec) { var s = v.toFixed(dec); var parts = s.split('.'); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); return parts.join('.'); }
 
   /* ---- 그리기 도우미 (F에 붙음) ---- */
-  function makeF(ctx, W, H, fontName) {
+  function makeF(ctx, W, H, fontName, themeId) {
     var u = Math.min(W, H * 16 / 9) / 1920;
-    var F = { W: W, H: H, u: u, cx: W / 2, cy: H / 2, E: E, seg: seg, lerp: lerp, clamp: clamp, rnd: rnd, lines: lines, hexA: hexA };
+    var th = (window.MG && MG.themeOf) ? MG.themeOf(themeId) : null;
+    if (th && th.font) fontName = th.font;
+    var F = { W: W, H: H, u: u, cx: W / 2, cy: H / 2, E: E, seg: seg, lerp: lerp, clamp: clamp, rnd: rnd, lines: lines, hexA: hexA, theme: th };
+    // 테마: 배경 / 카드 색 / 판(카드 모양 통째로)
+    F.bg = function (p, t, c, o) { if (p._trans) return; o = o || {}; if (th) th.bg(ctx, p, F, t || 0, c, o); else { ctx.fillStyle = F.grad(p._bg, hexA(c || p._c1, .35), true); ctx.fillRect(0, 0, W, H); if (!o.plain && o.deco !== false) F.deco(p._c1, p._c2, t || 0); } };
+    F.card = function (p) { return th ? th.card(p, F) : (F.light(p._bg) && !p._trans ? 'rgba(255,255,255,.88)' : 'rgba(255,255,255,.1)'); };
+    F.panel = function (x, y, w, h, r, p, o) { o = o || {}; var rr = r * (th && th.radius != null ? th.radius : 1); ctx.save(); if (th && th.shadow && !o.hot) { ctx.shadowColor = 'rgba(0,0,0,.1)'; ctx.shadowBlur = 30 * u; ctx.shadowOffsetY = 8 * u; } if (th && th.glow && o.hot) { ctx.shadowColor = p._c1; ctx.shadowBlur = 40 * u; } ctx.fillStyle = o.hot ? p._c1 : (o.fill || F.card(p)); F.rr(x, y, w, h, rr); ctx.fill(); ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; var st = o.hot ? null : (th && th.stroke); if (th && th.glow && !o.hot) st = hexA(p._c1, .6); if (st) { ctx.strokeStyle = st; ctx.lineWidth = (th.strokeW || 2) * u; ctx.stroke(); } ctx.restore(); };
     F.font = function (weight, size) { return weight + ' ' + Math.max(1, size) + 'px ' + fontName; };
     F.rr = function (x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
     // 글자 한 줄: maxW 안에 들어오게 자동 축소. 돌려주는 값 = 실제 크기
