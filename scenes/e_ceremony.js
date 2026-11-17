@@ -43,7 +43,7 @@
   function stepsMarks(segs) { var t = 0, m = []; segs.forEach(function (s, i) { if (i) m.push(t); t += s.d; }); return m; }
   function drawSteps(segs, ctx, t, p, F) { var acc = 0; for (var i = 0; i < segs.length; i++) { if (t < acc + segs[i].d || i === segs.length - 1) { segs[i].draw(ctx, Math.min(t - acc, segs[i].d), p, F); return; } acc += segs[i].d; } }
   function bgFlag(ctx, p, F, t) { var W = F.W, H = F.H, u = F.u; ctx.fillStyle = p._trans ? 'rgba(0,0,0,0)' : p._bg; ctx.fillRect(0, 0, W, H); }
-  function centerFlag(ctx, F, t, scale, alpha) { var W = F.W, H = F.H, u = F.u, fw = Math.min(W * .62, 1180 * u) * (scale || 1); flag(ctx, F.cx - fw / 2, F.cy - fw / 3 - 60 * u, fw, alpha); }
+  function centerFlag(ctx, F, t, scale, alpha) { var W = F.W, H = F.H, u = F.u, band = H * .58, fw = Math.min(W * .62, band * 1.5) * (scale || 1), fh = fw * 2 / 3; flag(ctx, F.cx - fw / 2, H * .08 + (band - fh) / 2, fw, alpha); }   // 태극기는 위쪽 띠(8%~66%) 안에만 — 아래 글(74%·80%·88%)과 안 겹치게
 
   MG.add([
     /* 3. 국민의례 */
