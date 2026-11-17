@@ -41,7 +41,7 @@
   var sampleKeys = [];
   function photoFields() { var out = []; S.SCENES.forEach(function (sc) { sc.fields.forEach(function (f) { if (f.type === 'image' || f.type === 'images') out.push({ id: sc.id, f: f }); }); }); return out; }
   function setSample(img) { clearSample(false); var fi = M().fieldImgs; photoFields().forEach(function (x) { var k = x.id + '.' + x.f.k; if (fi[k] && !(Array.isArray(fi[k]) && !fi[k].length)) return; fi[k] = x.f.type === 'images' ? [img, img, img, img] : img; sampleKeys.push(k); }); $('galPhotoNote').textContent = '내 사진을 ' + sampleKeys.length + '곳에 시험으로 넣었습니다(원래 넣어 둔 사진은 그대로). 「사진 빼기」로 되돌립니다.'; $('galPhotoDel').hidden = false; render(); M().refreshThumbs(); }
-  function clearSample(re) { var fi = M().fieldImgs; sampleKeys.forEach(function (k) { delete fi[k]; }); sampleKeys = []; $('galPhotoNote').textContent = ''; $('galPhotoDel').hidden = true; if (re !== false) { render(); M().refreshThumbs(); } }
+  function clearSample(re) { var fi = M().fieldImgs; sampleKeys.forEach(function (k) { delete fi[k]; }); sampleKeys = []; $('galPhotoNote').textContent = '「내 사진으로 미리보기」: 사진 한 장을 고르면 사진 칸이 비어 있는 장면에 시험으로 들어가, 내 사진으로 어떻게 보일지 한꺼번에 볼 수 있습니다. 원래 넣어 둔 사진은 건드리지 않습니다.'; $('galPhotoDel').hidden = true; if (re !== false) { render(); M().refreshThumbs(); } }
   function init() {
     if (!$('gal')) return;
     $('galPhoto').onchange = function () { var f = this.files && this.files[0]; if (!f) return; var url = URL.createObjectURL(f), img = new Image(); img.onload = function () { setSample(img); }; img.src = url; };
