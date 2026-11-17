@@ -108,7 +108,7 @@
   /* ---- 입력 칸 ---- */
   function renderForm() {
     var s = S.BY[state.scene], p = params(s.id), h = '';
-    h += '<h2>' + s.icon + ' ' + s.name + '</h2><p class="desc">' + s.desc + '</p>';
+    h += '<h3 class="scName">' + s.icon + ' ' + s.name + '</h3><p class="desc">' + s.desc + '</p>';
     s.fields.forEach(function (f) {
       var id = 'f_' + f.k;
       h += '<label class="fld"><span>' + f.label + '</span>';
