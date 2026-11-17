@@ -85,7 +85,7 @@
         if (!blob) { ok = false; if (!m.cancelled()) m.toast((fmt === 'gif' ? 'GIF' : 'MP4') + ' 만들기에 실패해 멈췄습니다: ' + label); break; }
         var durl = await blobToDataURL(blob), data = durl.replace(/^data:/, '');
         var slide = pptx.addSlide(); slide.background = { color: (it.look && it.look.bgMode === 'trans') ? '000000' : String(it.look && it.look.bg || st.bg).replace('#', '') };
-        if (fmt === 'gif') slide.addImage({ data: data, x: 0, y: 0, w: '100%', h: '100%' }); else slide.addMedia({ type: 'video', data: data, x: 0, y: 0, w: '100%', h: '100%' });
+        if (fmt === 'gif') slide.addImage({ data: data, x: 0, y: 0, w: '100%', h: '100%' }); else { var pc = document.createElement('canvas'); pc.width = W; pc.height = H; m.drawFrame(pc.getContext('2d'), W, H, Math.max(0, d - .15), it.id, false); slide.addMedia({ type: 'video', data: data, cover: pc.toDataURL('image/jpeg', .85), x: 0, y: 0, w: '100%', h: '100%' }); }
         var sp = new URLSearchParams(); Object.keys(it.p).forEach(function (k) { var f = sc.fields.filter(function (ff) { return ff.k === k; })[0]; if (f && String(it.p[k]) !== String(f.def == null ? '' : f.def)) sp.set(k, it.p[k]); }); ['theme', 'c1', 'c2', 'bg', 'bgMode'].forEach(function (k) { if (it.look && it.look[k] != null) sp.set(k, it.look[k]); }); sp.set('ratio', st.ratio);
         var link = 'https://jahwalktg.github.io/jahwal-motion/#' + it.id + '&' + sp.toString();
         var lines = ['[즉석 모션그래픽] ' + sc.name, '길이 ' + m.fmtT(d) + ' · ' + (fmt === 'gif' ? 'GIF(슬라이드 쇼에서 저절로 움직임)' : 'MP4(슬라이드가 열리면 자동 실행, 소리 포함 가능)'), '', '■ 글자를 고치려면: 아래 링크를 열어 고친 뒤 다시 받아 이 슬라이드의 ' + (fmt === 'gif' ? '그림' : '비디오') + '을 바꿔 넣으세요(영상 안 글자는 PowerPoint에서 직접 못 고칩니다).', link, '', '■ 입력값'];
@@ -113,5 +113,5 @@
     render();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
-  window.MGBundle = { add: add, build: build, items: function () { return items; }, render: render };
+  window.MGBundle = { add: add, build: build, items: function () { return items; }, render: render, libs: libs, postProcess: postProcess, blobToDataURL: blobToDataURL };
 })();

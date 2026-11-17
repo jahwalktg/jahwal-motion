@@ -219,10 +219,11 @@
   };
 
   // MP4 (WebCodecs + mp4-muxer) — 장면 하나를 Blob으로. 소리 큐가 있으면 AAC로 함께 넣음. 실패·취소면 null
-  async function renderMp4(id, W, H, label) {
+  async function renderMp4(id, W, H, label, bitrate) {
+    var br = bitrate || 10000000;
     var s = S.BY[id], d = dur(s, params(id)), fps = 30, total = Math.ceil(d * fps), pre = label ? label + ' ' : '';
     var canWC = !!(window.VideoEncoder && window.Mp4Muxer); var cfg = null;
-    if (canWC) { var cands = ['avc1.64002A', 'avc1.4D402A', 'avc1.42E02A', 'avc1.640028']; for (var i = 0; i < cands.length; i++) { try { var r = await VideoEncoder.isConfigSupported({ codec: cands[i], width: W, height: H, bitrate: 10000000, framerate: fps }); if (r.supported) { cfg = r.config; break; } } catch (e) { } } }
+    if (canWC) { var cands = ['avc1.64002A', 'avc1.4D402A', 'avc1.42E02A', 'avc1.640028']; for (var i = 0; i < cands.length; i++) { try { var r = await VideoEncoder.isConfigSupported({ codec: cands[i], width: W, height: H, bitrate: br, framerate: fps }); if (r.supported) { cfg = r.config; break; } } catch (e) { } } }
     if (!cfg) return null;
     cancelFlag = false; progress(true, pre + 'MP4 만드는 중… 0 / ' + total, 0);
     await fontsReady();
@@ -332,5 +333,5 @@
   $('stepMode').onchange = function () { live.step = this.checked; };
   raf = requestAnimationFrame(tick);
   function searchIds(q) { var kq = listQ, kg = listG; listQ = String(q || '').trim(); listG = ''; var r = SCENES.filter(matches).map(function (x) { return x.id; }); listQ = kq; listG = kg; return r; }
-  window._mg = { searchIds: searchIds, state: state, drawFrame: drawFrame, selectScene: selectScene, RATIOS: RATIOS, params: params, fullParams: fullParams, renderMp4: renderMp4, renderGif: renderGif, download: download, progress: progress, toast: toast, save: save, renderForm: renderForm, renderList: renderList, refreshThumbs: refreshThumbs, fontsReady: fontsReady, dur: function (id) { return dur(S.BY[id], params(id)); }, fieldAud: fieldAud, fieldImgs: fieldImgs, audioCues: audioCues, setBusy: function (b) { busy = b; if (b) { state.playing = false; audioStop(); } else state.playing = true; }, isBusy: function () { return busy; }, cancelled: function () { return cancelFlag; }, fileBase: fileBase, esc: esc, fmtT: fmtT };
+  window._mg = { searchIds: searchIds, images: images, state: state, drawFrame: drawFrame, selectScene: selectScene, RATIOS: RATIOS, params: params, fullParams: fullParams, renderMp4: renderMp4, renderGif: renderGif, download: download, progress: progress, toast: toast, save: save, renderForm: renderForm, renderList: renderList, refreshThumbs: refreshThumbs, fontsReady: fontsReady, dur: function (id) { return dur(S.BY[id], params(id)); }, fieldAud: fieldAud, fieldImgs: fieldImgs, audioCues: audioCues, setBusy: function (b) { busy = b; if (b) { state.playing = false; audioStop(); } else state.playing = true; }, isBusy: function () { return busy; }, cancelled: function () { return cancelFlag; }, fileBase: fileBase, esc: esc, fmtT: fmtT };
 })();
