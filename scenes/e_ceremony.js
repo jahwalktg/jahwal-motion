@@ -131,12 +131,13 @@
       fields: [
         { k: 'title', label: '제목', def: '내빈 소개', max: 20 },
         { k: 'items', label: '내빈(한 줄에 「이름 | 직함·소속」, 12명까지)', type: 'lines', def: '김○○ | ○○구청 복지정책과장\n이○○ | ○○구의회 의원\n박○○ | ○○지역자활센터 운영위원장', max: 12 },
-        { k: 'each', label: '한 분 머무는 초', type: 'number', def: 3, min: 2, max: 10 }
+        { k: 'each', label: '한 분 머무는 초', type: 'number', def: 3, min: 2, max: 10 },
+        { k: 'counter', label: '위쪽 작은 글', type: 'select', def: 'y', opts: [['y', '제목 + 숫자 (내빈 소개 · 3/12)'], ['t', '제목만 (내빈 소개)'], ['n', '숫자만 (3/12)'], ['x', '없음']] }
       ],
       segs: function (p) {
         var S = [], its = lines(p.items, 12), e = +p.each || 3;
         S.push({ d: 2.5, draw: function (ctx, tt, p, F) { F.bg(p, tt); F.text(p.title, F.cx, F.cy, { size: 110 * F.u, weight: 900, color: p._tx, maxW: F.W * .9, alpha: seg(tt, 0, .5) }); } });
-        its.forEach(function (l, i) { var a = l.split('|').map(function (x) { return x.trim(); }); S.push({ d: e, draw: function (ctx, tt, p, F) { var W = F.W, H = F.H, u = F.u; F.bg(p, tt, null, { deco: false }); F.text(p.title + ' · ' + (i + 1) + '/' + its.length, F.cx, H * .14, { size: 40 * u, weight: 600, color: p._tx, alpha: .7 }); var g = E.back(seg(tt, 0, .7)); ctx.save(); ctx.translate(F.cx, F.cy); ctx.scale(Math.max(.01, g), Math.max(.01, g)); F.panel(-W * .36, -170 * u, W * .72, 340 * u, 30 * u, p); ctx.fillStyle = p._c2; F.rr(-60 * u, -170 * u, 120 * u, 10 * u, 5 * u); ctx.fill(); ctx.restore(); F.text(a[0] || '', F.cx, F.cy - 40 * u, { size: 130 * u, weight: 900, color: p._tx, maxW: W * .66, alpha: seg(tt, .3, .4) }); F.text(a[1] || '', F.cx, F.cy + 95 * u, { size: 50 * u, weight: 500, color: p._tx, maxW: W * .66, alpha: seg(tt, .5, .4) * .9 }); } }); });
+        its.forEach(function (l, i) { var a = l.split('|').map(function (x) { return x.trim(); }); S.push({ d: e, draw: function (ctx, tt, p, F) { var W = F.W, H = F.H, u = F.u; F.bg(p, tt, null, { deco: false }); var hd = p.counter === 'x' ? '' : p.counter === 't' ? p.title : p.counter === 'n' ? (i + 1) + '/' + its.length : p.title + ' · ' + (i + 1) + '/' + its.length; F.text(hd, F.cx, H * .14, { size: 40 * u, weight: 600, color: p._tx, alpha: .7 }); var g = E.back(seg(tt, 0, .7)); ctx.save(); ctx.translate(F.cx, F.cy); ctx.scale(Math.max(.01, g), Math.max(.01, g)); F.panel(-W * .36, -170 * u, W * .72, 340 * u, 30 * u, p); ctx.fillStyle = p._c2; F.rr(-60 * u, -170 * u, 120 * u, 10 * u, 5 * u); ctx.fill(); ctx.restore(); F.text(a[0] || '', F.cx, F.cy - 40 * u, { size: 130 * u, weight: 900, color: p._tx, maxW: W * .66, alpha: seg(tt, .3, .4) }); F.text(a[1] || '', F.cx, F.cy + 95 * u, { size: 50 * u, weight: 500, color: p._tx, maxW: W * .66, alpha: seg(tt, .5, .4) * .9 }); } }); });
         return S;
       },
       dur: function (p) { return stepsDur(this.segs(p)); }, marks: function (p) { return stepsMarks(this.segs(p)); },
