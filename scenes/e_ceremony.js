@@ -56,16 +56,20 @@
         { k: 'pledge', label: '맹세문 자막', type: 'select', def: 'y', opts: [['y', '맹세문 자막을 천천히 보여 줌(약 14초)'], ['n', '맹세문 없이 태극기만(8초)']] },
         { k: 'lineSec', label: '애국가 한 줄 머무는 초', type: 'number', def: 6, min: 3, max: 12 },
         { k: 'silSec', label: '묵념 초', type: 'number', def: 10, min: 5, max: 60 },
-        { k: 'silText', label: '묵념 대상 글', def: '순국선열 및 호국영령에 대한 묵념', max: 40 }
+        { k: 'silText', label: '묵념 대상 글', def: '순국선열 및 호국영령에 대한 묵념', max: 40 },
+        { k: 'aud1', label: '국기에 대한 경례 음원(선택)', type: 'audio', builtin: [['', '없음(화면만, 현장 음향 사용)'], ['audio/salute_pledge.m4a', '기본: 해군군악대 연주 + 맹세문 낭독 (공유마당 기증저작물)'], ['audio/salute_bgm.m4a', '기본: 연주만 (맹세문은 사회자가 낭독)']] },
+        { k: 'aud2', label: '애국가 음원(선택, 애국가를 넣을 때)', type: 'audio', builtin: [['', '없음(화면만)'], ['audio/anthem_1.m4a', '기본: 2018 애국가 합창 1절 (공유마당 기증저작물)'], ['audio/anthem_1to4.m4a', '기본: 2018 애국가 합창 1~4절']] }
       ],
+      audioCues: function (p) { var st = +p.standSec || 4, pd = this.pledgeSec(p), c = [{ k: 'aud1', at: st }]; if (p.incl === 'b' || p.incl === 'c') c.push({ k: 'aud2', at: st + pd + 3 + 3 }); return c; },
+      pledgeSec: function (p) { var a = p._aud && p._aud.aud1; return a ? Math.max(6, a.duration) : (p.pledge === 'y' ? 14 : 8); },
       segs: function (p) {
-        var S = [], u;
+        var S = [], u, self = this;
         S.push({ d: +p.standSec || 4, draw: function (ctx, tt, p, F) { bgFlag(ctx, p, F); centerFlag(ctx, F, tt, .8, seg(tt, 0, .8)); F.para('국민의례가 있겠습니다.\n모두 자리에서 일어나 주시기 바랍니다.', F.cx, F.H * .83, { size: 62 * F.u, weight: 700, color: p._tx, maxW: F.W * .9, maxLines: 2, alpha: seg(tt, .3, .6) }); } });
-        var pd = p.pledge === 'y' ? 14 : 8;
-        S.push({ d: pd, draw: function (ctx, tt, p, F) { bgFlag(ctx, p, F); centerFlag(ctx, F, tt, 1, 1); F.text('국기에 대하여 경례', F.cx, F.H * .74, { size: 76 * F.u, weight: 800, color: p._tx, maxW: F.W * .9, alpha: seg(tt, 0, .5) }); if (p.pledge === 'y') { var n = Math.floor(seg(tt, 1.2, 10.5) * PLEDGE.length); F.para(PLEDGE.slice(0, n), F.cx, F.H * .88, { size: 44 * F.u, weight: 500, color: p._tx, maxW: F.W * .9, maxLines: 2, alpha: .95 }); } } });
+        var pd = self.pledgeSec(p), a2 = p._aud && p._aud.aud2;
+        S.push({ d: pd, draw: function (ctx, tt, p, F) { bgFlag(ctx, p, F); centerFlag(ctx, F, tt, 1, 1); F.text('국기에 대하여 경례', F.cx, F.H * .74, { size: 76 * F.u, weight: 800, color: p._tx, maxW: F.W * .9, alpha: seg(tt, 0, .5) }); if (p.pledge === 'y') { var n = Math.floor(seg(tt, pd * .12, pd * .62) * PLEDGE.length); F.para(PLEDGE.slice(0, n), F.cx, F.H * .88, { size: 44 * F.u, weight: 500, color: p._tx, maxW: F.W * .9, maxLines: 2, alpha: .95 }); } } });
         S.push({ d: 3, draw: function (ctx, tt, p, F) { bgFlag(ctx, p, F); centerFlag(ctx, F, tt, 1, 1); F.text('바로', F.cx, F.H * .8, { size: 90 * F.u, weight: 900, color: p._tx, alpha: seg(tt, 0, .4) }); } });
         if (p.incl === 'b' || p.incl === 'c') {
-          var ls = +p.lineSec || 6, ln = ANTHEM[0].concat(CHORUS);
+          var ln = ANTHEM[0].concat(CHORUS), ls = a2 ? Math.max(2, a2.duration / ln.length) : (+p.lineSec || 6);
           S.push({ d: 3, draw: function (ctx, tt, p, F) { bgFlag(ctx, p, F); centerFlag(ctx, F, tt, .8, 1); F.text('애국가 제창', F.cx, F.H * .8, { size: 80 * F.u, weight: 800, color: p._tx, alpha: seg(tt, 0, .5) }); } });
           ln.forEach(function (line, i) { S.push({ d: ls, draw: function (ctx, tt, p, F) { bgFlag(ctx, p, F); centerFlag(ctx, F, tt, .62, 1); F.text(line, F.cx, F.H * .78, { size: 84 * F.u, weight: 800, color: p._tx, maxW: F.W * .92, alpha: seg(tt, 0, .5) }); F.text('애국가 1절 · ' + (i + 1) + '/4', F.cx, F.H * .92, { size: 34 * F.u, weight: 500, color: p._tx, alpha: .6 }); } }); });
         }
@@ -84,14 +88,16 @@
     /* 4. 애국가 가사 자막 */
     {
       id: 'anthem', group: '의식·개회', icon: '🎵', name: '애국가 가사 자막',
-      desc: '태극기 배경에 애국가 가사가 한 줄씩. 음원은 없어 현장 반주에 맞춰 스페이스로 넘기거나(전체화면) 줄마다 N초로 자동. 1절만 / 1·4절 / 1~4절.',
+      desc: '태극기 배경에 애국가 가사가 한 줄씩. 음원을 고르면 가사가 음원 길이에 맞춰 넘어가고 소리가 함께 들어갑니다(전체화면·MP4). 음원 없이는 현장 반주에 맞춰 스페이스로 넘기거나 줄마다 N초로 자동. 1절만 / 1·4절 / 1~4절.',
       fields: [
         { k: 'v', label: '절', type: 'select', def: '1', opts: [['1', '1절'], ['14', '1절·4절'], ['1234', '1~4절']] },
         { k: 'lineSec', label: '한 줄 머무는 초', type: 'number', def: 6, min: 3, max: 12 },
-        { k: 'intro', label: '처음 안내 글', def: '애국가 제창', max: 20 }
+        { k: 'intro', label: '처음 안내 글', def: '애국가 제창', max: 20 },
+        { k: 'aud', label: '애국가 음원(선택)', type: 'audio', builtin: [['', '없음(화면만, 현장 반주)'], ['audio/anthem_1.m4a', '기본: 2018 애국가 합창 1절 (공유마당 기증저작물)'], ['audio/anthem_1to4.m4a', '기본: 2018 애국가 합창 1~4절']] }
       ],
+      audioCues: function (p) { return [{ k: 'aud', at: 3 }]; },
       segs: function (p) {
-        var S = [], ls = +p.lineSec || 6, vs = String(p.v || '1').split('').map(Number);
+        var vs = String(p.v || '1').split('').map(Number), S = [], a = p._aud && p._aud.aud, nL = vs.reduce(function (t, v) { return t + ANTHEM[v - 1].length + CHORUS.length; }, 0), ls = a ? Math.max(2, a.duration / nL) : (+p.lineSec || 6);
         S.push({ d: 3, draw: function (ctx, tt, p, F) { bgFlag(ctx, p, F); centerFlag(ctx, F, tt, .8, seg(tt, 0, .6)); F.text(p.intro, F.cx, F.H * .8, { size: 80 * F.u, weight: 800, color: p._tx, maxW: F.W * .9, alpha: seg(tt, .3, .5) }); } });
         vs.forEach(function (v) { var ln = ANTHEM[v - 1].concat(CHORUS); ln.forEach(function (line, i) { S.push({ d: ls, draw: function (ctx, tt, p, F) { bgFlag(ctx, p, F); centerFlag(ctx, F, tt, .62, 1); F.text(line, F.cx, F.H * .78, { size: 84 * F.u, weight: 800, color: p._tx, maxW: F.W * .92, alpha: seg(tt, 0, .5) }); F.text(v + '절 · ' + (i + 1) + '/4', F.cx, F.H * .92, { size: 34 * F.u, weight: 500, color: p._tx, alpha: .6 }); } }); }); });
         return S;

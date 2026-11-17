@@ -20,11 +20,12 @@
   function save() { try { var o = { scene: state.scene, ratio: state.ratio, theme: state.theme, c1: state.c1, c2: state.c2, bg: state.bg, bgMode: state.bgMode, p: {} }; SCENES.forEach(function (s) { o.p[s.id] = state.p[s.id] || {}; }); localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) { } }
   function load() { try { var o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o) { ['scene', 'ratio', 'theme', 'c1', 'c2', 'bg', 'bgMode'].forEach(function (k) { if (o[k]) state[k] = o[k]; }); if (!S.THEMES[state.theme]) state.theme = 'classic'; state.p = o.p || {}; } } catch (e) { } if (!S.BY[state.scene]) state.scene = 'open'; }
   function params(id) { var s = S.BY[id], p = state.p[id] || (state.p[id] = {}); s.fields.forEach(function (f) { if (f.type === 'image' || f.type === 'images') return; if (p[f.k] == null) p[f.k] = f.def == null ? '' : f.def; }); return p; }
-  function dur(s, p) { return typeof s.dur === 'function' ? s.dur(p) : s.dur; }
+  function dur(s, p) { if (s.audioCues) p = fullParams(s.id); return typeof s.dur === 'function' ? s.dur(p) : s.dur; }   // 음원이 길이를 정하는 장면은 음원 정보(_aud)까지 넣어 계산
   function textColor() { if (state.bgMode === 'trans') return '#1A2B50'; var h = state.bg.replace('#', ''), n = parseInt(h, 16); return (0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) > 160 ? '#1A2B50' : '#FFFFFF'; }
   function fullParams(id) {
     var p = Object.assign({}, params(id)); var s = S.BY[id];
     s.fields.forEach(function (f) { if (f.type === 'image') p[f.k] = fieldImgs[id + '.' + f.k] || null; if (f.type === 'images') p[f.k] = fieldImgs[id + '.' + f.k] || []; });
+    p._aud = {}; s.fields.forEach(function (f) { if (f.type === 'audio') { var a = fieldAud[id + '.' + f.k]; p._aud[f.k] = a ? { duration: a.buffer.duration, name: a.name } : null; } });
     p._c1 = state.c1; p._c2 = state.c2; p._bg = state.bg; p._theme = state.theme; p._tx = textColor(); p._logo = images.logo; p._trans = state.bgMode === 'trans';
     return p;
   }
@@ -57,7 +58,7 @@
     (S.SITUATIONS || []).forEach(function (st) { h += '<button type="button" class="gt sit' + (listSit === st.id ? ' on' : '') + '" data-sit="' + st.id + '" title="' + st.desc + '">' + st.icon + ' ' + st.name + '</button>'; });
     $('sits').innerHTML = h;
   }
-  function card(sc, num) { return '<div class="sc' + (sc.id === state.scene ? ' on' : '') + '" data-id="' + sc.id + '" role="button" tabindex="0">' + (num ? '<span class="num">' + num + '</span>' : '') + '<canvas class="th" width="160" height="90" data-th="' + sc.id + '"></canvas><span class="nm">' + sc.icon + ' ' + sc.name + (sc.liveOnly ? ' <em>현장 재생용</em>' : '') + (sc.marks ? ' <em>스페이스로 단계 넘김</em>' : '') + '</span><button type="button" class="fav' + (favs[sc.id] ? ' on' : '') + '" data-fav="' + sc.id + '" title="자주 쓰는 장면">★</button></div>'; }
+  function card(sc, num) { return '<div class="sc' + (sc.id === state.scene ? ' on' : '') + '" data-id="' + sc.id + '" role="button" tabindex="0">' + (num ? '<span class="num">' + num + '</span>' : '') + '<canvas class="th" width="160" height="90" data-th="' + sc.id + '"></canvas><span class="nm">' + sc.icon + ' ' + sc.name + (sc.liveOnly ? ' <em>현장 재생용</em>' : '') + (sc.marks ? ' <em>스페이스로 단계 넘김</em>' : '') + '</span><button type="button" class="fav' + (favs[sc.id] ? ' on' : '') + '" data-fav="' + sc.id + '" title="자주 쓰는 장면">★</button>' + (sc.liveOnly ? '' : '<button type="button" class="addc" data-add="' + sc.id + '" title="PPT 묶음에 담기(지금 입력·디자인 그대로)">＋</button>') + '</div>'; }
   function renderList() {
     var tabs = '<button type="button" class="gt' + (listG === '' ? ' on' : '') + '" data-g="">전체 ' + SCENES.length + '</button>';
     S.GROUPS.forEach(function (g) { var n = SCENES.filter(function (x) { return x.group === g; }).length; if (n) tabs += '<button type="button" class="gt' + (listG === g ? ' on' : '') + '" data-g="' + g + '">' + g + ' ' + n + '</button>'; });
@@ -96,7 +97,7 @@
     if (thumbQ.length) thumbTimer = setTimeout(drawThumbs, 16);
   }
   function refreshThumbs() { thumbCache = {}; thumbQ = [].slice.call($('list').querySelectorAll('canvas[data-th]')); if (!thumbTimer) thumbTimer = setTimeout(drawThumbs, 200); }
-  $('list').addEventListener('click', function (e) { var f = e.target.closest('[data-fav]'); if (f) { favs[f.dataset.fav] = !favs[f.dataset.fav]; try { localStorage.setItem(KEY + '.fav', JSON.stringify(favs)); } catch (x) { } renderList(); return; } var b = e.target.closest('.sc'); if (!b) return; selectScene(b.dataset.id); });
+  $('list').addEventListener('click', function (e) { var ad = e.target.closest('[data-add]'); if (ad) { if (window.MGBundle) MGBundle.add(ad.dataset.add); return; } var f = e.target.closest('[data-fav]'); if (f) { favs[f.dataset.fav] = !favs[f.dataset.fav]; try { localStorage.setItem(KEY + '.fav', JSON.stringify(favs)); } catch (x) { } renderList(); return; } var b = e.target.closest('.sc'); if (!b) return; selectScene(b.dataset.id); });
   $('list').addEventListener('keydown', function (e) { if (e.key !== 'Enter' && e.key !== ' ') return; var b = e.target.closest('.sc'); if (!b) return; e.preventDefault(); selectScene(b.dataset.id); });
   $('gtabs').addEventListener('click', function (e) { var b = e.target.closest('.gt'); if (!b) return; listG = b.dataset.g; renderList(); });
   $('sits').addEventListener('click', function (e) { var b = e.target.closest('.sit'); if (!b) return; listSit = (b.dataset.sit === listSit) ? '' : b.dataset.sit; if (listSit) listG = ''; renderList(); });
@@ -116,6 +117,7 @@
       else if (f.type === 'number') h += '<input id="' + id + '" type="number" data-k="' + f.k + '" value="' + esc(p[f.k]) + '" min="' + (f.min || 0) + '" max="' + (f.max || 999) + '" step="' + (f.step || 1) + '">';
       else if (f.type === 'image') h += '<input id="' + id + '" type="file" accept="image/*" data-img="' + f.k + '"><small class="hint">' + (fieldImgs[s.id + '.' + f.k] ? '사진이 들어 있습니다. 바꾸려면 다시 고르세요.' : '사진은 이 브라우저 안에서만 쓰고 어디에도 보내지 않습니다.') + '</small>';
       else if (f.type === 'images') h += '<input id="' + id + '" type="file" accept="image/*" multiple data-imgs="' + f.k + '"><small class="hint">' + ((fieldImgs[s.id + '.' + f.k] || []).length ? (fieldImgs[s.id + '.' + f.k].length + '장 들어 있습니다(고른 순서대로). 바꾸려면 다시 고르세요.') : '여러 장을 한 번에 고르세요(Ctrl 누르고 클릭). 브라우저 안에서만 씁니다.') + '</small>';
+      else if (f.type === 'audio') { var cur = fieldAud[s.id + '.' + f.k]; h += '<select id="' + id + '" data-aud-sel="' + f.k + '">' + (f.builtin || [['', '없음(화면만)']]).map(function (o) { return '<option value="' + o[0] + '"' + (cur && cur.src === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '<option value="__file"' + (cur && cur.src === '__file' ? ' selected' : '') + '>내 음원 파일 넣기(mp3·wav·m4a)</option></select>'; h += '<input id="' + id + '_f" type="file" accept="audio/*" data-aud="' + f.k + '"' + (cur && cur.src === '__file' ? '' : ' hidden') + '>'; h += '<small class="hint" data-aud-note="' + f.k + '">' + (cur ? '음원 들어옴: ' + esc(cur.name) + ' (' + fmtT(cur.buffer.duration) + ') — 전체화면 재생과 MP4에 소리가 들어갑니다.' : '음원을 고르면 화면 길이가 음원에 맞춰지고, 전체화면 재생·MP4에 소리가 들어갑니다. GIF에는 소리가 없습니다.') + '</small>'; }
       else h += '<input id="' + id + '" type="text" data-k="' + f.k + '" value="' + esc(p[f.k]) + '" maxlength="' + (f.max || 60) + '" placeholder="' + esc(f.ph || '') + '">';
       h += '</label>';
     });
@@ -123,6 +125,8 @@
     $('form').querySelectorAll('[data-k]').forEach(function (el) { el.addEventListener('input', function () { params(s.id)[el.dataset.k] = el.value; state.t = Math.min(state.t, dur(s, params(s.id))); save(); updateDurLabel(); }); });
     $('form').querySelectorAll('[data-img]').forEach(function (el) { el.addEventListener('change', function () { var f = el.files && el.files[0]; if (!f) return; loadImg(f, function (img) { fieldImgs[s.id + '.' + el.dataset.img] = img; state.t = 0; renderForm(); }); }); });
     $('form').querySelectorAll('[data-imgs]').forEach(function (el) { el.addEventListener('change', function () { var fs = [].slice.call(el.files || []).slice(0, 8); if (!fs.length) return; var out = new Array(fs.length), left = fs.length; fs.forEach(function (f, i) { loadImg(f, function (img) { out[i] = img; if (!--left) { fieldImgs[s.id + '.' + el.dataset.imgs] = out.filter(Boolean); state.t = 0; renderForm(); updateDurLabel(); } }); }); }); });
+    $('form').querySelectorAll('[data-aud-sel]').forEach(function (el) { el.addEventListener('change', function () { var k = el.dataset.audSel, fin = $('f_' + k + '_f'); if (el.value === '__file') { fin.hidden = false; fin.click(); return; } fin.hidden = true; if (!el.value) { delete fieldAud[s.id + '.' + k]; state.t = 0; renderForm(); return; } loadAudioUrl(el.value, el.options[el.selectedIndex].textContent, function (buf, name) { fieldAud[s.id + '.' + k] = { buffer: buf, name: name, src: el.value }; state.t = 0; renderForm(); }); }); });
+    $('form').querySelectorAll('[data-aud]').forEach(function (el) { el.addEventListener('change', function () { var f = el.files && el.files[0]; if (!f) return; f.arrayBuffer().then(function (ab) { return actx().decodeAudioData(ab); }).then(function (buf) { fieldAud[s.id + '.' + el.dataset.aud] = { buffer: buf, name: f.name, src: '__file' }; state.t = 0; renderForm(); }, function () { toast('음원 파일을 읽지 못했습니다. mp3·wav·m4a 파일인지 확인해 주세요.'); }); }); });
     $('shareBtn').onclick = function () { var sp = new URLSearchParams(); var pp = params(s.id); s.fields.forEach(function (f) { if (f.type === 'image' || f.type === 'images') return; if (pp[f.k] != null && String(pp[f.k]) !== String(f.def == null ? '' : f.def)) sp.set(f.k, pp[f.k]); }); ['ratio', 'theme', 'c1', 'c2', 'bg', 'bgMode'].forEach(function (k) { sp.set(k, state[k]); }); var url = location.origin + location.pathname + '#' + s.id + '&' + sp.toString(); copyText(url, '이 장면의 설정 링크를 복사했습니다. 동료에게 보내면 같은 화면이 열립니다(사진·로고는 빠짐).'); };
     $('liveOnlyNote').hidden = !s.liveOnly; $('stepNote').hidden = !s.marks; $('dlBox').classList.toggle('dim', !!s.liveOnly);
     updateDurLabel();
@@ -130,6 +134,17 @@
   function copyText(t, msg) { var done = function () { toast(msg); }; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, function () { fallbackCopy(t); done(); }); else { fallbackCopy(t); done(); } }
   function fallbackCopy(t) { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e) { } ta.remove(); }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+  /* ---- 음원: 읽기·재생(전체화면·미리보기)·MP4 합성 ---- */
+  var fieldAud = {}, _actx = null;
+  function actx() { if (!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 }); return _actx; }
+  function loadAudioUrl(url, label, cb) { toast('음원을 불러오는 중…'); fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(function (ab) { return actx().decodeAudioData(ab); }).then(function (buf) { cb(buf, label); toast('음원 준비됨: ' + label); }, function (e) { toast('기본 음원을 아직 불러올 수 없습니다(' + e.message + '). 「내 음원 파일 넣기」로 직접 넣어 주세요.'); }); }
+  function audioCues(id) { var sc = S.BY[id]; if (!sc.audioCues) return []; var p = fullParams(id); return sc.audioCues(p).map(function (c) { var a = fieldAud[id + '.' + c.k]; return a ? { at: c.at, buffer: a.buffer } : null; }).filter(Boolean); }
+  var aud = { on: false, srcs: [], startT: 0, startAt: 0, scene: '' };
+  function audioStop() { aud.srcs.forEach(function (x) { try { x.stop(); } catch (e) { } }); aud.srcs = []; aud.on = false; }
+  function audioStart(fromT) { audioStop(); var cues = audioCues(state.scene); if (!cues.length) return; var ac = actx(); if (ac.state === 'suspended') ac.resume(); cues.forEach(function (c) { var off = fromT - c.at; if (off >= c.buffer.duration) return; var src = ac.createBufferSource(); src.buffer = c.buffer; src.connect(ac.destination); if (off >= 0) src.start(0, off); else src.start(ac.currentTime - off); aud.srcs.push(src); }); aud.on = true; aud.startT = fromT; aud.startAt = ac.currentTime; aud.scene = state.scene; }
+  function audioSync() { var want = state.playing && !busy && (live.on || ($('sndPrev') && $('sndPrev').checked)) && audioCues(state.scene).length > 0; if (!want) { if (aud.on) audioStop(); return; } if (!aud.on || aud.scene !== state.scene) { audioStart(state.t); return; } var expect = aud.startT + (actx().currentTime - aud.startAt); if (Math.abs(expect - state.t) > .35) audioStart(state.t); }
+  // 장면 길이 d초의 섞인 소리 → AudioBuffer(48k, 2ch)
+  function mixAudio(id, d) { var cues = audioCues(id); if (!cues.length) return Promise.resolve(null); var sr = 48000, len = Math.ceil(d * sr); var oc = new OfflineAudioContext(2, len, sr); cues.forEach(function (c) { var src = oc.createBufferSource(); src.buffer = c.buffer; src.connect(oc.destination); src.start(Math.max(0, c.at)); }); return oc.startRendering(); }
   function loadImg(file, cb) { var url = URL.createObjectURL(file), img = new Image(); img.onload = function () { cb(img); }; img.onerror = function () { toast('이미지를 읽지 못했습니다.'); }; img.src = url; }
   function updateDurLabel() { var s = S.BY[state.scene], d = dur(s, params(s.id)); $('durLbl').textContent = fmtT(d); $('seek').max = d; }
   function fmtT(x) { x = Math.max(0, x); var m = Math.floor(x / 60), s = x - m * 60; return m ? m + '분 ' + Math.floor(s) + '초' : (Math.round(s * 10) / 10) + '초'; }
@@ -167,8 +182,8 @@
     var dt = lastTs ? (ts - lastTs) / 1000 : 0; lastTs = ts; if (dt > .25) dt = .25;
     var s = S.BY[state.scene], d = dur(s, params(s.id));
     if (state.playing && !busy) { var before = state.t; state.t += dt;
-      if (live.on && s.marks && live.step) { var ms = s.marks(params(s.id)); for (var mi = 0; mi < ms.length; mi++) { if (before < ms[mi] && state.t >= ms[mi]) { state.t = ms[mi]; state.playing = false; live.waiting = true; break; } } } if (state.t >= d) { if (live.on || s.liveOnly) state.t = s.liveOnly ? Math.min(state.t, d) : 0; else { state.t = d; state.playing = false; setTimeout(function () { if (!state.playing && state.t >= d) { state.t = 0; state.playing = true; } }, 1200); } } }
-    drawFrame(pctx, prev.width, prev.height, state.t, state.scene, false);
+      if (live.on && s.marks && live.step) { var ms = s.marks(s.audioCues ? fullParams(s.id) : params(s.id)); for (var mi = 0; mi < ms.length; mi++) { if (before < ms[mi] && state.t >= ms[mi]) { state.t = ms[mi]; state.playing = false; live.waiting = true; break; } } } if (state.t >= d) { if (live.on || s.liveOnly) state.t = s.liveOnly ? Math.min(state.t, d) : 0; else { state.t = d; state.playing = false; setTimeout(function () { if (!state.playing && state.t >= d) { state.t = 0; state.playing = true; } }, 1200); } } }
+    drawFrame(pctx, prev.width, prev.height, state.t, state.scene, false); try { audioSync(); } catch (e) { }
     $('seek').value = state.t; $('tLbl').textContent = fmtT(state.t); $('play').textContent = state.playing ? '⏸' : '▶';
     if (live.on) drawLive();
   }
@@ -180,7 +195,7 @@
   var live = { on: false, step: true, waiting: false, cv: $('liveCv'), ctx: $('liveCv').getContext('2d') };
   function drawLive() { var cv = live.cv, dims = RATIOS[state.ratio], sw = window.innerWidth, sh = window.innerHeight, sc = Math.min(sw / dims[0], sh / dims[1]), w = Math.round(dims[0] * sc), h = Math.round(dims[1] * sc); if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; } cv.style.width = w + 'px'; cv.style.height = h + 'px'; drawFrame(live.ctx, w, h, state.t, state.scene, false); var sc = S.BY[state.scene]; $('liveHelp').textContent = (sc.marks ? (live.waiting ? '▶ 스페이스: 다음 단계' : '스페이스: 멈춤/다음 단계') : '스페이스 멈춤/재생') + ' · R 처음부터 · Esc 나가기'; $('liveHelp').classList.toggle('wait', !!live.waiting); }
   $('liveBtn').onclick = function () { live.on = true; live.waiting = false; live.step = $('stepMode').checked; state.t = 0; state.playing = true; $('live').classList.add('on'); document.body.classList.add('noscroll'); var el = $('live'); if (el.requestFullscreen) el.requestFullscreen().catch(function () { }); };
-  function exitLive() { live.on = false; $('live').classList.remove('on'); document.body.classList.remove('noscroll'); if (document.fullscreenElement) document.exitFullscreen().catch(function () { }); }
+  function exitLive() { live.on = false; audioStop(); $('live').classList.remove('on'); document.body.classList.remove('noscroll'); if (document.fullscreenElement) document.exitFullscreen().catch(function () { }); }
   $('liveExit').onclick = exitLive;
   document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && live.on) exitLive(); });
   document.addEventListener('keydown', function (e) { if (!live.on) return; if (e.key === 'Escape') exitLive(); if (e.key === ' ') { e.preventDefault(); if (live.waiting) { live.waiting = false; state.t += 0.001; state.playing = true; } else state.playing = !state.playing; } if (e.key === 'r' || e.key === 'R') { state.t = 0; state.playing = true; } });
@@ -203,34 +218,54 @@
     cv.toBlob(function (b) { download(b, fileBase() + '_' + Math.round(state.t * 10) / 10 + 's.png'); toast('PNG를 받았습니다.'); }, 'image/png');
   };
 
-  // MP4 (WebCodecs + mp4-muxer) / WebM 대체
-  $('dlMp4').onclick = async function () {
-    if (busy || liveOnlyGuard()) return;
-    var s = S.BY[state.scene], d = dur(s, params(s.id)), fps = 30, sz = outSize(), W = sz[0], H = sz[1], total = Math.ceil(d * fps);
-    var canWC = !!(window.VideoEncoder && window.Mp4Muxer);
-    var cfg = null;
+  // MP4 (WebCodecs + mp4-muxer) — 장면 하나를 Blob으로. 소리 큐가 있으면 AAC로 함께 넣음. 실패·취소면 null
+  async function renderMp4(id, W, H, label) {
+    var s = S.BY[id], d = dur(s, params(id)), fps = 30, total = Math.ceil(d * fps), pre = label ? label + ' ' : '';
+    var canWC = !!(window.VideoEncoder && window.Mp4Muxer); var cfg = null;
     if (canWC) { var cands = ['avc1.64002A', 'avc1.4D402A', 'avc1.42E02A', 'avc1.640028']; for (var i = 0; i < cands.length; i++) { try { var r = await VideoEncoder.isConfigSupported({ codec: cands[i], width: W, height: H, bitrate: 10000000, framerate: fps }); if (r.supported) { cfg = r.config; break; } } catch (e) { } } }
-    if (!cfg) { return webmFallback(s, d, fps, W, H); }
-    busy = true; cancelFlag = false; state.playing = false; progress(true, 'MP4 만드는 중… 0 / ' + total, 0);
+    if (!cfg) return null;
+    cancelFlag = false; progress(true, pre + 'MP4 만드는 중… 0 / ' + total, 0);
     await fontsReady();
+    var mixed = null; try { mixed = await mixAudio(id, d); } catch (e) { console.error(e); }
+    var acfg = null; if (mixed && window.AudioEncoder) { try { var ar = await AudioEncoder.isConfigSupported({ codec: 'mp4a.40.2', sampleRate: 48000, numberOfChannels: 2, bitrate: 128000 }); if (ar.supported) acfg = ar.config; } catch (e) { } }
     var cv = document.createElement('canvas'); cv.width = W; cv.height = H; var ctx = cv.getContext('2d');
-    var muxer = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(), video: { codec: 'avc', width: W, height: H }, fastStart: 'in-memory', firstTimestampBehavior: 'offset' });
+    var mopt = { target: new Mp4Muxer.ArrayBufferTarget(), video: { codec: 'avc', width: W, height: H }, fastStart: 'in-memory', firstTimestampBehavior: 'offset' };
+    if (acfg) mopt.audio = { codec: 'aac', sampleRate: 48000, numberOfChannels: 2 };
+    var muxer = new Mp4Muxer.Muxer(mopt);
     var err = null, enc = new VideoEncoder({ output: function (chunk, meta) { muxer.addVideoChunk(chunk, meta); }, error: function (e) { err = e; } });
     enc.configure(Object.assign({}, cfg, { latencyMode: 'quality' }));
+    var aenc = null;
     try {
+      if (acfg) {
+        aenc = new AudioEncoder({ output: function (chunk, meta) { muxer.addAudioChunk(chunk, meta); }, error: function (e) { err = e; } }); aenc.configure(acfg);
+        var L = mixed.length, step = 1024, ch0 = mixed.getChannelData(0), ch1 = mixed.getChannelData(1);
+        for (var off = 0; off < L; off += step) { var n = Math.min(step, L - off), buf = new Float32Array(n * 2); buf.set(ch0.subarray(off, off + n), 0); buf.set(ch1.subarray(off, off + n), n); var ad = new AudioData({ format: 'f32-planar', sampleRate: 48000, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(off * 1e6 / 48000), data: buf }); aenc.encode(ad); ad.close(); if (off % (step * 64) === 0) await yieldUI(); }
+        await aenc.flush();
+      }
       for (var f = 0; f < total; f++) {
         if (cancelFlag || err) break;
-        drawFrame(ctx, W, H, f / fps, s.id, false);
+        drawFrame(ctx, W, H, f / fps, id, false);
         var frame = new VideoFrame(cv, { timestamp: Math.round(f * 1e6 / fps), duration: Math.round(1e6 / fps) });
         enc.encode(frame, { keyFrame: f % (fps * 2) === 0 }); frame.close();
-        if (enc.encodeQueueSize > 4 || f % 5 === 0) { progress(true, 'MP4 만드는 중… ' + (f + 1) + ' / ' + total, f / total); await yieldUI(); }
+        if (enc.encodeQueueSize > 4 || f % 5 === 0) { progress(true, pre + 'MP4 만드는 중… ' + (f + 1) + ' / ' + total, f / total); await yieldUI(); }
         while (enc.encodeQueueSize > 8) await yieldUI();
       }
-      if (!cancelFlag && !err) { await enc.flush(); muxer.finalize(); var blob = new Blob([muxer.target.buffer], { type: 'video/mp4' }); download(blob, fileBase() + '.mp4'); toast('MP4를 받았습니다 (' + (blob.size / 1048576).toFixed(1) + 'MB, ' + W + '×' + H + ', ' + fmtT(d) + ')'); }
-      else if (err) { console.error(err); toast('MP4 만들기에 실패했습니다. WebM으로 다시 시도합니다.'); try { enc.close(); } catch (e) { } busy = false; progress(false); return webmFallback(s, d, fps, W, H); }
+      if (!cancelFlag && !err) { await enc.flush(); muxer.finalize(); try { enc.close(); if (aenc) aenc.close(); } catch (e) { } return new Blob([muxer.target.buffer], { type: 'video/mp4' }); }
+      if (err) console.error(err);
     } catch (e) { console.error(e); toast('MP4 만들기에 실패했습니다: ' + e.message); }
-    try { enc.close(); } catch (e) { }
-    busy = false; progress(false); state.playing = true;
+    try { enc.close(); if (aenc) aenc.close(); } catch (e) { }
+    return null;
+  }
+  $('dlMp4').onclick = async function () {
+    if (busy || liveOnlyGuard()) return;
+    var s = S.BY[state.scene], d = dur(s, params(s.id)), sz = outSize(), W = sz[0], H = sz[1];
+    busy = true; state.playing = false; audioStop();
+    var blob = await renderMp4(s.id, W, H, '');
+    if (blob) { download(blob, fileBase() + '.mp4'); toast('MP4를 받았습니다 (' + (blob.size / 1048576).toFixed(1) + 'MB, ' + W + '×' + H + ', ' + fmtT(d) + (audioCues(s.id).length ? ', 소리 포함' : '') + ')'); busy = false; progress(false); state.playing = true; return; }
+    busy = false; progress(false);
+    if (cancelFlag) { state.playing = true; return; }
+    if (!(window.VideoEncoder && window.Mp4Muxer)) return webmFallback(s, d, 30, W, H);
+    toast('MP4 만들기에 실패했습니다. WebM으로 다시 시도합니다.'); return webmFallback(s, d, 30, W, H);
   };
   // WebM 대체 (MediaRecorder, 실시간)
   function webmFallback(s, d, fps, W, H) {
@@ -251,28 +286,37 @@
   // GIF (gif.js — 워커 스크립트는 같은 출처가 아니어서 받아서 Blob URL로)
   var gifWorkerUrl = null;
   async function gifWorker() { if (gifWorkerUrl) return gifWorkerUrl; var r = await fetch('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'); var txt = await r.text(); gifWorkerUrl = URL.createObjectURL(new Blob([txt], { type: 'application/javascript' })); return gifWorkerUrl; }
+  function renderGif(id, gw, gh, label) {
+    return new Promise(async function (resolve) {
+      var s = S.BY[id], d = dur(s, params(id)), fps = 12, total = Math.ceil(d * fps), pre = label ? label + ' ' : '';
+      cancelFlag = false; progress(true, pre + 'GIF 준비 중…', 0);
+      try {
+        await fontsReady(); var wurl = await gifWorker();
+        var trans = state.bgMode === 'trans';
+        var gif = new GIF({ workers: 3, quality: trans ? 6 : 8, width: gw, height: gh, workerScript: wurl, transparent: trans ? parseInt(CHROMA.slice(1), 16) : null, dither: trans ? false : 'FloydSteinberg-serpentine', repeat: 0 });
+        var cv = document.createElement('canvas'); cv.width = gw; cv.height = gh; var ctx = cv.getContext('2d');
+        for (var f = 0; f < total; f++) {
+          if (cancelFlag) break;
+          drawFrame(ctx, gw, gh, f / fps, id, true);
+          gif.addFrame(ctx, { copy: true, delay: Math.round(1000 / fps) });
+          if (f % 6 === 0) { progress(true, pre + 'GIF 그리는 중… ' + (f + 1) + ' / ' + total, f / total * .5); await yieldUI(); }
+        }
+        if (cancelFlag) return resolve(null);
+        gif.on('progress', function (x) { progress(true, pre + 'GIF 묶는 중… ' + Math.round(x * 100) + '%', .5 + x * .5); });
+        gif.on('finished', function (blob) { resolve(blob); });
+        gif.render();
+      } catch (e) { console.error(e); toast('GIF 만들기에 실패했습니다: ' + e.message); resolve(null); }
+    });
+  }
   $('dlGif').onclick = async function () {
     if (busy || liveOnlyGuard()) return;
     if (!window.GIF) { toast('GIF 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.'); return; }
-    var s = S.BY[state.scene], d = dur(s, params(s.id)), fps = 12, dims = RATIOS[state.ratio], gw = parseInt($('gq').value, 10), gh = Math.round(gw * dims[1] / dims[0]), total = Math.ceil(d * fps);
+    var s = S.BY[state.scene], d = dur(s, params(s.id)), dims = RATIOS[state.ratio], gw = parseInt($('gq').value, 10), gh = Math.round(gw * dims[1] / dims[0]);
     if (d > 20 && !confirm('이 장면은 ' + fmtT(d) + '라 GIF가 꽤 큽니다(수십 MB). 계속할까요? MP4를 권합니다.')) return;
-    busy = true; cancelFlag = false; state.playing = false; progress(true, 'GIF 준비 중…', 0);
-    try {
-      await fontsReady(); var wurl = await gifWorker();
-      var trans = state.bgMode === 'trans';
-      var gif = new GIF({ workers: 3, quality: trans ? 6 : 8, width: gw, height: gh, workerScript: wurl, transparent: trans ? parseInt(CHROMA.slice(1), 16) : null, dither: trans ? false : 'FloydSteinberg-serpentine', repeat: 0 });
-      var cv = document.createElement('canvas'); cv.width = gw; cv.height = gh; var ctx = cv.getContext('2d');
-      for (var f = 0; f < total; f++) {
-        if (cancelFlag) break;
-        drawFrame(ctx, gw, gh, f / fps, s.id, true);
-        gif.addFrame(ctx, { copy: true, delay: Math.round(1000 / fps) });
-        if (f % 6 === 0) { progress(true, 'GIF 그리는 중… ' + (f + 1) + ' / ' + total, f / total * .5); await yieldUI(); }
-      }
-      if (cancelFlag) { busy = false; progress(false); state.playing = true; return; }
-      gif.on('progress', function (x) { progress(true, 'GIF 묶는 중… ' + Math.round(x * 100) + '%', .5 + x * .5); });
-      gif.on('finished', function (blob) { download(blob, fileBase() + '.gif'); toast('GIF를 받았습니다 (' + (blob.size / 1048576).toFixed(1) + 'MB, ' + gw + '×' + gh + (trans ? ', 투명 배경' : '') + ')'); busy = false; progress(false); state.playing = true; });
-      gif.render();
-    } catch (e) { console.error(e); toast('GIF 만들기에 실패했습니다: ' + e.message); busy = false; progress(false); state.playing = true; }
+    busy = true; state.playing = false; audioStop();
+    var blob = await renderGif(s.id, gw, gh, '');
+    if (blob) { download(blob, fileBase() + '.gif'); toast('GIF를 받았습니다 (' + (blob.size / 1048576).toFixed(1) + 'MB, ' + gw + '×' + gh + (state.bgMode === 'trans' ? ', 투명 배경' : '') + (audioCues(s.id).length ? ' — GIF에는 소리가 없습니다' : '') + ')'); }
+    busy = false; progress(false); state.playing = true;
   };
 
   /* ---- 알림 ---- */
@@ -287,5 +331,5 @@
   if (!(window.VideoEncoder && window.Mp4Muxer)) $('mp4Note').hidden = false;
   $('stepMode').onchange = function () { live.step = this.checked; };
   raf = requestAnimationFrame(tick);
-  window._mg = { state: state, drawFrame: drawFrame, selectScene: selectScene, RATIOS: RATIOS, params: params };
+  window._mg = { state: state, drawFrame: drawFrame, selectScene: selectScene, RATIOS: RATIOS, params: params, fullParams: fullParams, renderMp4: renderMp4, renderGif: renderGif, download: download, progress: progress, toast: toast, save: save, renderForm: renderForm, renderList: renderList, refreshThumbs: refreshThumbs, fontsReady: fontsReady, dur: function (id) { return dur(S.BY[id], params(id)); }, fieldAud: fieldAud, fieldImgs: fieldImgs, audioCues: audioCues, setBusy: function (b) { busy = b; if (b) { state.playing = false; audioStop(); } else state.playing = true; }, isBusy: function () { return busy; }, cancelled: function () { return cancelFlag; }, fileBase: fileBase, esc: esc, fmtT: fmtT };
 })();
