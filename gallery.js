@@ -9,7 +9,7 @@
   function midT(id) { var sc = S.BY[id], d = M().dur(id); return sc.liveOnly ? 100 : Math.min(d * .62, d - .1); }
   function card(sc) {
     var tags = (S.TAGS[sc.id] || '').split(' ').filter(Boolean).slice(0, 5).join(' · ');
-    return '<div class="gc" data-id="' + sc.id + '" role="button" tabindex="0"><div class="gth"><canvas width="320" height="180" data-gth="' + sc.id + '"></canvas>' + (sc.liveOnly ? '<span class="gtag">현장 재생용</span>' : '') + (sc.marks ? '<span class="gtag">단계 넘김</span>' : '') + '<span class="ghint">▶ 올리면 움직임</span></div><div class="gb"><b>' + sc.icon + ' ' + esc(sc.name) + '</b><p>' + esc(sc.desc) + '</p><small>' + esc(tags) + '</small></div><div class="gops"><button type="button" class="btn main" data-pick="' + sc.id + '">이 장면 쓰기</button>' + (sc.liveOnly ? '' : '<button type="button" class="btn" data-gadd="' + sc.id + '" title="PPT 묶음에 담기">＋ 담기</button>') + '</div></div>';
+    return '<div class="gc" data-id="' + sc.id + '" role="button" tabindex="0"><div class="gth"><canvas width="320" height="180" data-gth="' + sc.id + '"></canvas>' + (sc.liveOnly ? '<span class="gtag">현장 재생용</span>' : '') + (sc.marks ? '<span class="gtag">단계 넘김</span>' : '') + '<span class="ghint">▶ 올리면 움직임</span></div><div class="gb"><b>' + sc.icon + ' ' + esc(sc.name) + '</b>' + ((S.WHEN || {})[sc.id] ? '<span class="gw">이럴 때 · ' + esc(S.WHEN[sc.id]) + '</span>' : '') + '<p>' + esc(sc.desc) + '</p><small>' + esc(tags) + '</small></div><div class="gops"><button type="button" class="btn main" data-pick="' + sc.id + '">이 장면 쓰기</button>' + (sc.liveOnly ? '' : '<button type="button" class="btn" data-gadd="' + sc.id + '" title="PPT 묶음에 담기">＋ 담기</button>') + '</div></div>';
   }
   function visibleIds() {
     var ids = S.SCENES.map(function (s) { return s.id; });
@@ -37,8 +37,15 @@
   function show() { open = true; $('gal').classList.add('on'); document.body.classList.add('noscroll'); $('galQ').value = q; sitRow(); render(); setTimeout(function () { $('galQ').focus(); }, 50); }
   function close() { open = false; stopHover(); $('gal').classList.remove('on'); document.body.classList.remove('noscroll'); }
   function sitRow() { var h = '<button type="button" class="gt' + (sit === '' ? ' on' : '') + '" data-gsit="">전체</button>'; (S.SITUATIONS || []).forEach(function (st) { h += '<button type="button" class="gt' + (sit === st.id ? ' on' : '') + '" data-gsit="' + st.id + '">' + st.icon + ' ' + st.name + '</button>'; }); $('galSits').innerHTML = h; $('galSits').querySelectorAll('[data-gsit]').forEach(function (b) { b.onclick = function () { sit = b.dataset.gsit; sitRow(); render(); }; }); }
+  /* 내 사진으로 미리보기: 사진 칸이 비어 있는 장면에 시험용으로 넣어 갤러리에서 한꺼번에 봄 */
+  var sampleKeys = [];
+  function photoFields() { var out = []; S.SCENES.forEach(function (sc) { sc.fields.forEach(function (f) { if (f.type === 'image' || f.type === 'images') out.push({ id: sc.id, f: f }); }); }); return out; }
+  function setSample(img) { clearSample(false); var fi = M().fieldImgs; photoFields().forEach(function (x) { var k = x.id + '.' + x.f.k; if (fi[k] && !(Array.isArray(fi[k]) && !fi[k].length)) return; fi[k] = x.f.type === 'images' ? [img, img, img, img] : img; sampleKeys.push(k); }); $('galPhotoNote').textContent = '내 사진을 ' + sampleKeys.length + '곳에 시험으로 넣었습니다(원래 넣어 둔 사진은 그대로). 「사진 빼기」로 되돌립니다.'; $('galPhotoDel').hidden = false; render(); M().refreshThumbs(); }
+  function clearSample(re) { var fi = M().fieldImgs; sampleKeys.forEach(function (k) { delete fi[k]; }); sampleKeys = []; $('galPhotoNote').textContent = ''; $('galPhotoDel').hidden = true; if (re !== false) { render(); M().refreshThumbs(); } }
   function init() {
     if (!$('gal')) return;
+    $('galPhoto').onchange = function () { var f = this.files && this.files[0]; if (!f) return; var url = URL.createObjectURL(f), img = new Image(); img.onload = function () { setSample(img); }; img.src = url; };
+    $('galPhotoDel').onclick = function () { clearSample(true); };
     $('galBtn').onclick = show; $('galClose').onclick = close;
     $('galQ').addEventListener('input', function () { q = this.value.trim(); render(); });
     document.addEventListener('keydown', function (e) { if (open && e.key === 'Escape') close(); });

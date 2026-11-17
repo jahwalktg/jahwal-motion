@@ -53,7 +53,27 @@
     contact: '문의처 문의 연락처 전화 이메일 주소 담당자 운영 시간 안내 끝 카드',
     recruit: 'SNS 모집 공고 모집 안내 참여자 모집 채용 공고 카드뉴스 인스타 카카오톡 기간 대상 신청',
     birthday: '생일 축하 기념일 케이크 풍선 축하 반복 GIF 선물 꽃 메달 참여자 생일',
-    season: '명절 새해 인사 설 추석 한가위 송년 성탄 연하장 인사장 해돋이 보름달 눈 꽃 봄 감사 카카오톡 인사'
+    season: '명절 새해 인사 설 추석 한가위 송년 성탄 연하장 인사장 해돋이 보름달 눈 꽃 봄 감사 카카오톡 인사',
+    dday: 'D-day 디데이 디-데이 카운트다운 며칠 남았 날짜 행사까지 공지 대기',
+    timetable: '시간표 일정표 식순 시각 프로그램 순서 장소 타임테이블 교육 일정 워크숍 시간',
+    progress: '진행 바 순서 진행 지금 몇 번째 어디까지 진행 상황 다음 순서 식순 점',
+    oxquiz: 'OX 퀴즈 오엑스 타이머 정답 도장 문제 교육 참여 안전 교육 골든벨',
+    term: '용어 카드 단어 뜻 설명 낱말 자활 용어 IAP 게이트웨이 신입 교육 포스트잇',
+    people: '사람 아이콘 통계 10명 중 비율 인원 픽토그램 성과 취업률 참여자',
+    thermo: '온도계 목표 달성 모금 후원 현황 목표 대비 채움 모집 현황',
+    poll: '투표 설문 결과 그래프 보기 표수 만족도 선호 조사 결과 발표 왕관',
+    three: '핵심 3가지 세 가지 요약 정리 당부 마무리 포인트 3칸',
+    badges: '배지 인증 수상 마크 선정 연혁 자랑 센터 소개 벽 메달',
+    tree: '판단 나무 예 아니오 분기 흐름 결정 이럴 땐 절차 선택',
+    apply: '신청 절차 흐름도 단계 할 일 어디서 참여 신청 안내 이용 방법',
+    spot: '스포트라이트 화면 줌 여기를 누르세요 확대 강조 캡처 사용법 안내 화살표',
+    pen: '펜 판서 동그라미 밑줄 네모 형광펜 손글씨 메모 서명 자료 강조 포스트잇',
+    collage: '콜라주 사진 격자 벤토 여러 장 모음 하이라이트 소식지',
+    polaroid: '폴라로이드 사진 쌓임 스케치 추억 후기 인화',
+    photocmp: '전후 사진 비교 비포 애프터 슬라이더 가르는 선 개선 전 후 청소 정리',
+    hours: '영업시간 휴무 안내판 요일 시간 가게 카페 식당 편의점 세차 전화',
+    menu: '메뉴판 메뉴 가격 카페 식당 도시락 다과 보드',
+    hire: '채용 공고 모집 직무 자격 근무 급여 접수 종사자 채용 자원봉사 모집'
   };
   var SYN = [
     ['타이머', '시계', '시간 재기', '스톱워치'], ['QR', '큐알', 'qr코드', '큐알코드'], ['카운트다운', '카운트', '초읽기'],
@@ -61,17 +81,19 @@
     ['조 편성', '조편성', '팀 나누기', '모둠'], ['감사', '땡큐', '고맙습니다'], ['통계', '숫자', '수치', '실적'], ['설문', '만족도'],
     ['발표', '프레젠테이션', 'PPT', '피피티'], ['행사', '기념식', '개회식', '행사장'], ['교육', '강의', '연수', '워크숍'], ['선언', '선포'], ['박수', '손뼉'], ['조직도', '조직 구성', '구성도'],
     ['흐름도', '순서도', '절차', '프로세스'], ['타임라인', '일정표', '연표', '로드맵'], ['전후', '전 후', '비포 애프터', '비교'], ['연락처', '문의처', '문의'],
-    ['모집', '공고', '채용'], ['새해', '연하장', '설날', '신년'], ['추석', '한가위', '명절'], ['생일', '기념일', '축하']
+    ['모집', '공고', '채용'], ['새해', '연하장', '설날', '신년'], ['추석', '한가위', '명절'], ['생일', '기념일', '축하'], ['디데이', 'D-day', 'dday', 'd데이'], ['시간표', '일정표', '타임테이블'], ['OX', '오엑스', 'ox퀴즈'],
+    ['용어', '낱말', '단어'], ['온도계', '모금', '목표 달성'], ['투표', '설문 결과', '여론'], ['콜라주', '사진 모음', '격자'], ['메뉴', '메뉴판', '차림표'], ['영업시간', '운영시간', '휴무']
   ];
   var SITUATIONS = [
-    { id: 'event', icon: '🎪', name: '행사·기념식 한 바퀴', desc: '입장부터 폐회까지 순서대로', scenes: ['wait', 'phone', 'safety', 'count', 'open', 'declare', 'rite', 'guests', 'steps', 'lower', 'next', 'award', 'clap', 'shot', 'draw', 'thanks'] },
-    { id: 'edu', icon: '🎓', name: '교육·강의', desc: '강의 앞뒤와 쉬는 시간, 퀴즈', scenes: ['wait', 'phone', 'open', 'title', 'chapter', 'flow', 'marker', 'quote', 'quiz', 'timer', 'next', 'ptimer', 'alert', 'ask', 'sub2', 'qr', 'contact', 'thanks'] },
-    { id: 'report', icon: '📊', name: '성과 보고·발표', desc: 'PPT 안에서 숫자·비교·강조', scenes: ['title', 'chapter', 'org', 'timeline', 'flow', 'nums', 'bars', 'pct', 'compare', 'check', 'marker', 'quote', 'slides', 'photo', 'thanks'] },
-    { id: 'cert', icon: '🏆', name: '수료식·시상식', desc: '호명·시상·명단·축하', scenes: ['open', 'declare', 'rite', 'call', 'award', 'clap', 'roll', 'party', 'shot', 'thanks'] },
-    { id: 'workshop', icon: '👥', name: '워크숍·조별 활동', desc: '조 나누기와 시간 관리', scenes: ['steps', 'teams', 'ptimer', 'alert', 'next', 'timer', 'meal', 'ask', 'clap', 'shot'] },
+    { id: 'event', icon: '🎪', name: '행사·기념식 한 바퀴', desc: '입장부터 폐회까지 순서대로', scenes: ['dday', 'wait', 'timetable', 'phone', 'safety', 'count', 'open', 'declare', 'rite', 'guests', 'steps', 'progress', 'lower', 'next', 'award', 'clap', 'shot', 'draw', 'thanks'] },
+    { id: 'edu', icon: '🎓', name: '교육·강의', desc: '강의 앞뒤와 쉬는 시간, 퀴즈', scenes: ['wait', 'timetable', 'phone', 'open', 'title', 'chapter', 'term', 'flow', 'apply', 'tree', 'spot', 'pen', 'marker', 'quote', 'quiz', 'oxquiz', 'timer', 'next', 'ptimer', 'alert', 'ask', 'sub2', 'three', 'qr', 'contact', 'thanks'] },
+    { id: 'report', icon: '📊', name: '성과 보고·발표', desc: 'PPT 안에서 숫자·비교·강조', scenes: ['title', 'chapter', 'org', 'timeline', 'flow', 'nums', 'people', 'bars', 'pct', 'thermo', 'poll', 'compare', 'photocmp', 'check', 'marker', 'quote', 'badges', 'slides', 'collage', 'photo', 'three', 'thanks'] },
+    { id: 'cert', icon: '🏆', name: '수료식·시상식', desc: '호명·시상·명단·축하', scenes: ['dday', 'open', 'declare', 'rite', 'call', 'award', 'clap', 'roll', 'party', 'shot', 'polaroid', 'thanks'] },
+    { id: 'workshop', icon: '👥', name: '워크숍·조별 활동', desc: '조 나누기와 시간 관리', scenes: ['timetable', 'steps', 'teams', 'ptimer', 'alert', 'next', 'timer', 'meal', 'poll', 'three', 'ask', 'clap', 'shot'] },
     { id: 'overlay', icon: '🎬', name: '영상·슬라이드 위에 얹기', desc: '배경을 「투명」으로 받아 GIF로', scenes: ['lower', 'sub2', 'next', 'ticker', 'alert', 'ptimer', 'clap'] },
-    { id: 'promo', icon: '📣', name: '소식·홍보·SNS', desc: '사진과 QR, 축하 인사', scenes: ['recruit', 'photo', 'slides', 'qr', 'contact', 'season', 'birthday', 'party', 'quote', 'nums'] },
-    { id: 'wait', icon: '⏳', name: '대기·쉬는 시간', desc: '빈 화면 대신 띄워 두기', scenes: ['wait', 'logoloop', 'phone', 'timer', 'meal', 'ticker', 'qr'] }
+    { id: 'promo', icon: '📣', name: '소식·홍보·SNS', desc: '사진과 QR, 축하 인사', scenes: ['recruit', 'hire', 'apply', 'dday', 'collage', 'polaroid', 'photocmp', 'photo', 'slides', 'hours', 'menu', 'thermo', 'badges', 'qr', 'contact', 'season', 'birthday', 'party', 'quote', 'nums'] },
+    { id: 'wait', icon: '⏳', name: '대기·쉬는 시간', desc: '빈 화면 대신 띄워 두기', scenes: ['wait', 'dday', 'timetable', 'logoloop', 'phone', 'timer', 'meal', 'menu', 'hours', 'ticker', 'qr'] }
   ];
-  window.MG.TAGS = TAGS; window.MG.SYN = SYN; window.MG.SITUATIONS = SITUATIONS;
+  var WHEN = {'open': '행사 첫 화면, 교육 시작 전 표지', 'count': '시작 직전 분위기 모으기', 'steps': '개회 직후 오늘 순서 안내', 'rite': '기념식·수료식 국민의례 시간', 'anthem': '애국가 제창 때 가사 띄우기', 'silence': '추모·기념식 묵념 시간', 'guests': '내빈 소개 순서', 'wait': '행사 전 빔에 띄워 두는 대기 화면', 'safety': '행사 시작 1분 전 안내', 'declare': '개회·폐회 선언 순간', 'phone': '시작 전 휴대폰·촬영 안내 반복', 'logoloop': '빈 화면 대신 로고 띄워 두기', 'dday': '행사 전 주간 회의·단톡 공지', 'timetable': '대기 화면·교육 일정 안내', 'lower': '발표자 소개, 인터뷰 영상 위 이름표', 'call': '수상자·발표자 호명 직전', 'timer': '쉬는 시간 10분 재기', 'ticker': '행사 중 공지를 아래로 흘릴 때', 'award': '시상식 상 이름·수상자 발표', 'roll': '수료자·후원자 명단 흘리기', 'teams': '워크숍 조 편성 발표', 'ptimer': '발표 시간 제한 보여 주기', 'alert': '발표 마무리 신호', 'ask': '질의응답 시간 열기', 'quiz': '교육 중간 퀴즈 정답 공개', 'meal': '점심·다과 안내', 'shot': '단체 사진 촬영 신호', 'draw': '경품 추첨 연출', 'next': '다음 순서 예고를 모서리에', 'clap': '박수 유도', 'sub2': '영상·발표 위 자막 두 줄', 'progress': '행사 중간에 어디까지 왔는지', 'oxquiz': '교육 중 OX 퀴즈', 'term': '어려운 용어가 나올 때', 'nums': '성과 보고 숫자 강조', 'bars': '연도·사업단 비교', 'photo': '사진 한 장을 영상처럼', 'chapter': '발표 구역 나눌 때', 'marker': '핵심 문장 한 줄 강조', 'quote': '참여자 소감·인용', 'check': '준비 사항·점검 결과', 'pct': '달성률·만족도', 'slides': '현장 사진 여러 장 넘기기', 'title': '슬라이드 제목 등장', 'compare': '개선 전후, 작년과 올해', 'flow': '업무 절차·참여 과정', 'timeline': '연간 계획·추진 경과', 'org': '센터·사업단 조직 소개', 'people': '「10명 중 7명」 비율 보여 주기', 'thermo': '후원·모집 목표 현황', 'poll': '설문·투표 결과 발표', 'three': '교육 마무리 핵심 3가지', 'badges': '수상·인증 자랑', 'tree': '이럴 땐 이렇게 판단 안내', 'apply': '신청 방법·절차 안내', 'spot': '사용법 화면에서 누를 곳 안내', 'pen': '문서·사진 위에 판서', 'thanks': '행사·발표 마지막 장', 'party': '수료·개소·수상 축하', 'qr': '설문·출석·신청 QR 띄우기', 'contact': '안내 끝 문의처', 'recruit': '참여자 모집 공고(SNS·카카오톡)', 'birthday': '참여자·직원 생일 축하', 'season': '명절·새해 인사 보내기', 'collage': '행사 하이라이트 사진 모음', 'polaroid': '행사 스케치·추억 사진', 'photocmp': '공간·환경 개선 전후', 'hours': '사업단 가게 영업시간 안내', 'menu': '카페·식당·도시락 메뉴 안내', 'hire': '종사자 채용·추가 모집 공고'};
+  window.MG.TAGS = TAGS; window.MG.SYN = SYN; window.MG.SITUATIONS = SITUATIONS; window.MG.WHEN = WHEN;
 })();

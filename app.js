@@ -46,7 +46,7 @@
     var qs = [norm(q)]; (S.SYN || []).forEach(function (g) { var hit = g.some(function (w) { return norm(w).indexOf(norm(q)) >= 0 || norm(q).indexOf(norm(w)) >= 0; }); if (hit) g.forEach(function (w) { qs.push(norm(w)); }); });
     return qs;
   }
-  function hay(sc) { var sits = (S.SITUATIONS || []).filter(function (st) { return st.scenes.indexOf(sc.id) >= 0; }).map(function (st) { return st.name; }).join(' '); return norm(sc.name + ' ' + sc.desc + ' ' + sc.group + ' ' + sc.id + ' ' + (S.TAGS[sc.id] || '') + ' ' + sits); }
+  function hay(sc) { var sits = (S.SITUATIONS || []).filter(function (st) { return st.scenes.indexOf(sc.id) >= 0; }).map(function (st) { return st.name; }).join(' '); return norm(sc.name + ' ' + sc.desc + ' ' + sc.group + ' ' + sc.id + ' ' + (S.TAGS[sc.id] || '') + ' ' + ((S.WHEN || {})[sc.id] || '') + ' ' + sits); }
   function matches(sc) {
     if (listG === '★') { if (!favs[sc.id]) return false; } else if (listG && sc.group !== listG) return false;
     if (!listQ) return true;
@@ -58,7 +58,7 @@
     (S.SITUATIONS || []).forEach(function (st) { h += '<button type="button" class="gt sit' + (listSit === st.id ? ' on' : '') + '" data-sit="' + st.id + '" title="' + st.desc + '">' + st.icon + ' ' + st.name + '</button>'; });
     $('sits').innerHTML = h;
   }
-  function card(sc, num) { return '<div class="sc' + (sc.id === state.scene ? ' on' : '') + '" data-id="' + sc.id + '" role="button" tabindex="0">' + (num ? '<span class="num">' + num + '</span>' : '') + '<canvas class="th" width="160" height="90" data-th="' + sc.id + '"></canvas><span class="nm">' + sc.icon + ' ' + sc.name + (sc.liveOnly ? ' <em>현장 재생용</em>' : '') + (sc.marks ? ' <em>스페이스로 단계 넘김</em>' : '') + '</span><button type="button" class="fav' + (favs[sc.id] ? ' on' : '') + '" data-fav="' + sc.id + '" title="자주 쓰는 장면">★</button>' + (sc.liveOnly ? '' : '<button type="button" class="addc" data-add="' + sc.id + '" title="PPT 묶음에 담기(지금 입력·디자인 그대로)">＋</button>') + '</div>'; }
+  function card(sc, num) { return '<div class="sc' + (sc.id === state.scene ? ' on' : '') + '" data-id="' + sc.id + '" role="button" tabindex="0">' + (num ? '<span class="num">' + num + '</span>' : '') + '<canvas class="th" width="160" height="90" data-th="' + sc.id + '"></canvas><span class="nm">' + sc.icon + ' ' + sc.name + (sc.liveOnly ? ' <em>현장 재생용</em>' : '') + (sc.marks ? ' <em>스페이스로 단계 넘김</em>' : '') + ((S.WHEN || {})[sc.id] ? '<em class="when">이럴 때 · ' + S.WHEN[sc.id] + '</em>' : '') + '</span><button type="button" class="fav' + (favs[sc.id] ? ' on' : '') + '" data-fav="' + sc.id + '" title="자주 쓰는 장면">★</button>' + (sc.liveOnly ? '' : '<button type="button" class="addc" data-add="' + sc.id + '" title="PPT 묶음에 담기(지금 입력·디자인 그대로)">＋</button>') + '</div>'; }
   function renderList() {
     var tabs = '<button type="button" class="gt' + (listG === '' ? ' on' : '') + '" data-g="">전체 ' + SCENES.length + '</button>';
     S.GROUPS.forEach(function (g) { var n = SCENES.filter(function (x) { return x.group === g; }).length; if (n) tabs += '<button type="button" class="gt' + (listG === g ? ' on' : '') + '" data-g="' + g + '">' + g + ' ' + n + '</button>'; });
@@ -108,7 +108,7 @@
   /* ---- 입력 칸 ---- */
   function renderForm() {
     var s = S.BY[state.scene], p = params(s.id), h = '';
-    h += '<h3 class="scName">' + s.icon + ' ' + s.name + '</h3><p class="desc">' + s.desc + '</p>';
+    h += '<h3 class="scName">' + s.icon + ' ' + s.name + '</h3>' + ((S.WHEN || {})[s.id] ? '<p class="when">이럴 때 · ' + S.WHEN[s.id] + '</p>' : '') + '<p class="desc">' + s.desc + '</p>';
     s.fields.forEach(function (f) {
       var id = 'f_' + f.k;
       h += '<label class="fld"><span>' + f.label + '</span>';
