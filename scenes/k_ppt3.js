@@ -100,33 +100,44 @@
         });
       }
     },
-    /* 39. 조직도 */
+    /* 39. 조직도 — 들여쓰기 트리(열·행·단계 자유) */
     {
-      id: 'org', group: 'PPT 꾸밈', icon: '🏢', name: '조직도 — 위에서 아래로',
-      desc: '맨 위 상자 → 가운데 줄(팀, 4개까지) → 아래 줄(사업단·담당)이 차례로 나타납니다. 아래 줄은 「팀 번호 | 이름들」.',
+      id: 'org', group: 'PPT 꾸밈', icon: '🏢', name: '조직도 — 줄 들여쓰기로 자유롭게',
+      desc: '한 줄이 상자 하나. 앞에 띄어쓰기 두 칸(또는 -)을 넣을수록 한 단계 아래로 들어갑니다. 「이름 | 작은 글」. 줄을 더하면 열·행이 늘고 단계도 제한 없음(30상자까지). 같은 부모 아래 끝 상자가 3개 이상이면 세로로 쌓입니다.',
       fields: [
-        { k: 'top', label: '맨 위', def: '○○지역자활센터', max: 24 },
-        { k: 'top2', label: '맨 위 작은 글(선택)', def: '센터장', max: 20 },
-        { k: 'mid', label: '가운데 줄(한 줄에 하나, 4개까지)', type: 'lines', def: '자활사업운영과\n사례관리과\n운영지원과', max: 4 },
-        { k: 'low', label: '아래 줄(「가운데 번호 | 이름, 이름」, 가운데마다 한 줄)', type: 'lines', def: '1 | 편의점 · 세차 · 청소 · 샐러드\n2 | 게이트웨이 · 사례관리 · 교육\n3 | 회계 · 총무 · 4대보험', max: 4 }
+        { k: 'title', label: '제목(선택)', def: '', max: 30 },
+        { k: 'tree', label: '조직(한 줄 = 상자, 들여쓰기 2칸 = 한 단계 아래, 「이름 | 작은 글」)', type: 'lines', def: '○○지역자활센터 | 센터장\n  자활사업운영과 | 과장\n    편의점\n    세차\n    청소\n    샐러드\n  사례관리과 | 과장\n    게이트웨이\n    사례관리\n    교육\n  운영지원과 | 과장\n    회계\n    총무\n    4대보험', max: 30 },
+        { k: 'speed', label: '나타나는 속도', type: 'select', def: 'n', opts: [['n', '보통'], ['f', '빠르게'], ['s', '천천히']] }
       ],
-      dur: function (p) { return 1 + lines(p.mid, 4).length * .5 + lines(p.low, 4).length * .5 + 2; },
+      parse: function (p) {
+        var raw = String(p.tree || '').split(/\r?\n/).filter(function (l) { return l.trim(); }).slice(0, 30), nodes = [], stack = [];
+        raw.forEach(function (l) { var m = /^([\s\-–>·]*)(.*)$/.exec(l), ind = m[1].replace(/\t/g, '  '), depth = Math.floor(ind.replace(/[^\s]/g, '  ').length / 2), a = m[2].split('|').map(function (x) { return x.trim(); }), nd = { name: a[0] || '', sub: a[1] || '', depth: depth, ch: [], idx: nodes.length }; while (stack.length && stack[stack.length - 1].depth >= depth) stack.pop(); if (stack.length) { nd.parent = stack[stack.length - 1]; nd.parent.ch.push(nd); nd.depth = nd.parent.depth + 1; } else nd.depth = 0; stack.push(nd); nodes.push(nd); });
+        var roots = nodes.filter(function (n) { return !n.parent; });
+        // 끝 상자만 3개↑ 가진 부모 → 세로로 쌓기(list)
+        nodes.forEach(function (n) { n.list = n.ch.length >= 3 && n.ch.every(function (c) { return !c.ch.length; }); });
+        function wu(n) { if (!n.ch.length || n.list) return n.w = 1; return n.w = Math.max(1, n.ch.reduce(function (s, c) { return s + wu(c); }, 0)); }
+        var total = roots.reduce(function (s, r) { return s + wu(r); }, 0) || 1, cur = 0;
+        function place(n, x0) { n.x0 = x0; n.x1 = x0 + n.w; n.cx = (n.x0 + n.x1) / 2; if (n.list) { n.ch.forEach(function (c, i) { c.cx = n.cx; c.x0 = n.x0; c.x1 = n.x1; c.row = i; }); } else { var a = x0; n.ch.forEach(function (c) { place(c, a); a += c.w; }); } }
+        roots.forEach(function (r) { place(r, cur); cur += r.w; });
+        var maxDepth = 0, order = []; (function walk(ns) { ns.forEach(function (n) { order.push(n); if (n.depth > maxDepth) maxDepth = n.depth; walk(n.ch); }); })(roots);
+        // 세로 쌓인 줄 수 중 가장 큰 것(높이 계산용)
+        var maxList = 0; nodes.forEach(function (n) { if (n.list && n.ch.length > maxList) maxList = n.ch.length; });
+        return { nodes: nodes, roots: roots, total: total, maxDepth: maxDepth, order: order, maxList: maxList };
+      },
+      dur: function (p) { var T = this.parse(p), k = p.speed === 'f' ? .25 : p.speed === 's' ? .7 : .45; return 1 + T.nodes.length * k + 2; },
       draw: function (ctx, t, p, F) {
-        var W = F.W, H = F.H, u = F.u, cx = F.cx, tall = H > W * 1.1; F.bg(p, t);
-        var mids = lines(p.mid, 4), n = mids.length || 1, lows = {}; lines(p.low, 4).forEach(function (l) { var a = l.split('|'); if (a.length > 1) lows[parseInt(a[0], 10)] = a.slice(1).join('|').trim(); });
-        var tw = Math.min(W * .5, 640 * u), th = (p.top2 ? 150 : 110) * u, ty = H * .1, g0 = E.back(seg(t, .2, .5));
-        if (g0 > 0) { ctx.save(); ctx.translate(cx, ty + th / 2); var s0 = Math.max(.01, g0); ctx.scale(s0, s0); ctx.fillStyle = p._c1; F.rr(-tw / 2, -th / 2, tw, th, 22 * u); ctx.fill(); F.text(p.top, 0, p.top2 ? -24 * u : 0, { size: 54 * u, weight: 900, color: '#fff', maxW: tw - 60 * u }); F.text(p.top2, 0, 36 * u, { size: 34 * u, weight: 500, color: 'rgba(255,255,255,.9)', maxW: tw - 60 * u }); ctx.restore(); }
-        var gap = 40 * u, mw = Math.min(400 * u, (W * .92 - gap * (n - 1)) / n), mh = 120 * u, my = ty + th + 110 * u, x0 = cx - (mw * n + gap * (n - 1)) / 2;
-        var lg = E.io(seg(t, .7, .5)); ctx.save(); ctx.strokeStyle = hexA(p._tx, .4); ctx.lineWidth = 5 * u; ctx.beginPath(); ctx.moveTo(cx, ty + th); ctx.lineTo(cx, ty + th + 55 * u * lg); ctx.stroke(); if (lg > .99 && n > 1) { var ag = E.io(seg(t, 1.0, .4)); ctx.beginPath(); ctx.moveTo(cx - (x0 + mw / 2 < cx ? (cx - x0 - mw / 2) * ag : 0), ty + th + 55 * u); ctx.lineTo(cx + (cx - x0 - mw / 2) * ag, ty + th + 55 * u); ctx.stroke(); } ctx.restore();
-        mids.forEach(function (m, i) {
-          var x = x0 + i * (mw + gap), g = E.back(seg(t, 1.2 + i * .5, .45)); if (g <= 0) return;
-          ctx.save(); ctx.strokeStyle = hexA(p._tx, .4); ctx.lineWidth = 5 * u; ctx.beginPath(); ctx.moveTo(x + mw / 2, ty + th + 55 * u); ctx.lineTo(x + mw / 2, my); ctx.stroke(); ctx.restore();
-          ctx.save(); ctx.translate(x + mw / 2, my + mh / 2); var s = Math.max(.01, g); ctx.scale(s, s); F.panel(-mw / 2, -mh / 2, mw, mh, 18 * u, p); ctx.strokeStyle = p._c1; ctx.lineWidth = 5 * u; ctx.stroke(); ctx.fillStyle = p._c2; F.rr(-mw / 2, -mh / 2, mw, 12 * u, 6 * u); ctx.fill(); F.text(m, 0, 6 * u, { size: 44 * u, weight: 800, color: p._tx, maxW: mw - 40 * u }); ctx.restore();
-          var low = lows[i + 1]; if (!low) return; var gl = seg(t, 1.2 + n * .5 + i * .5, .5); if (gl <= 0) return;
-          var ly = my + mh + 50 * u, lh = H - ly - H * .06, parts = low.split(/\s*[·,、]\s*/).filter(Boolean), ph = Math.min(80 * u, lh / Math.max(1, parts.length));
-          ctx.save(); ctx.globalAlpha = gl; ctx.strokeStyle = hexA(p._tx, .35); ctx.lineWidth = 4 * u; ctx.setLineDash([10 * u, 10 * u]); ctx.beginPath(); ctx.moveTo(x + mw / 2, my + mh); ctx.lineTo(x + mw / 2, ly + ph * parts.length - ph / 2); ctx.stroke(); ctx.restore();
-          parts.forEach(function (s2, j) { var a = seg(t, 1.2 + n * .5 + i * .5 + j * .15, .3); var yy = ly + ph * j + ph / 2; ctx.save(); ctx.globalAlpha = a; F.panel(x + 30 * u, yy - ph * .4, mw - 60 * u, ph * .8, 12 * u, p); ctx.restore(); F.text(s2, x + mw / 2, yy + 2 * u, { size: Math.min(34 * u, ph * .45), weight: 600, color: p._tx, maxW: mw - 90 * u, alpha: a }); });
-        });
+        var W = F.W, H = F.H, u = F.u, cx = F.cx, T = this.parse(p), k = p.speed === 'f' ? .25 : p.speed === 's' ? .7 : .45; F.bg(p, t);
+        if (!T.nodes.length) { F.text('조직을 한 줄에 하나씩 적어 주세요', cx, F.cy, { size: 50 * u, weight: 600, color: p._tx, alpha: .8 }); return; }
+        var top = p.title ? H * .2 : H * .08; if (p.title) F.text(p.title, cx, H * .1, { size: 60 * u, weight: 800, color: p._tx, maxW: W * .9, alpha: seg(t, 0, .5) });
+        var levels = T.maxDepth + 1 + (T.maxList ? Math.max(0, (T.maxList * .55) - 1) : 0), lvH = Math.min(230 * u, (H * .92 - top) / levels), slotW = W * .94 / T.total, bw = Math.min(slotW * .9, 420 * u), bh = Math.min(lvH * .5, 110 * u), listH = Math.min(bh * .72, lvH * .5);
+        function xy(n) { return { x: W * .03 + n.cx * slotW, y: n.parent && n.parent.list ? (top + (n.depth - 1) * lvH + bh + 30 * u + n.row * (listH + 10 * u) + listH / 2) : (top + n.depth * lvH + bh / 2) }; }
+        var appear = {}; T.order.forEach(function (n, i) { appear[n.idx] = E.back(seg(t, .3 + i * k, .5)); });
+        // 연결선
+        ctx.save(); ctx.strokeStyle = hexA(p._tx, .4); ctx.lineWidth = 4 * u; ctx.lineCap = 'round';
+        T.nodes.forEach(function (n) { if (!n.ch.length) return; var P = xy(n), ga = clamp(appear[n.idx], 0, 1); if (ga <= 0) return; ctx.globalAlpha = ga; if (n.list) { var last = xy(n.ch[n.ch.length - 1]); var lg = clamp(appear[n.ch[0].idx], 0, 1); ctx.setLineDash([8 * u, 8 * u]); ctx.beginPath(); ctx.moveTo(P.x, P.y + bh / 2); ctx.lineTo(P.x, lerp(P.y + bh / 2, last.y, lg)); ctx.stroke(); ctx.setLineDash([]); return; } var midY = P.y + bh / 2 + (lvH - bh) / 2, c0 = xy(n.ch[0]), c1 = xy(n.ch[n.ch.length - 1]), g = clamp(appear[n.ch[0].idx], 0, 1); ctx.beginPath(); ctx.moveTo(P.x, P.y + bh / 2); ctx.lineTo(P.x, lerp(P.y + bh / 2, midY, Math.min(1, g * 2))); ctx.stroke(); if (g > .5) { var gg = (g - .5) * 2; ctx.beginPath(); ctx.moveTo(lerp(P.x, c0.x, gg), midY); ctx.lineTo(lerp(P.x, c1.x, gg), midY); ctx.stroke(); } n.ch.forEach(function (c) { var C = xy(c), cg = clamp(appear[c.idx], 0, 1); if (cg <= 0) return; ctx.beginPath(); ctx.moveTo(C.x, midY); ctx.lineTo(C.x, lerp(midY, C.y - (c.parent.list ? listH : bh) / 2, cg)); ctx.stroke(); }); });
+        ctx.restore();
+        // 상자
+        T.nodes.forEach(function (n) { var g = appear[n.idx]; if (g <= 0) return; var P = xy(n), isList = n.parent && n.parent.list, w = isList ? bw * .86 : bw, h = isList ? listH : bh, rootLike = n.depth === 0; ctx.save(); ctx.translate(P.x, P.y); var s = Math.max(.01, g); ctx.scale(s, s); if (rootLike) { F.panel(-w / 2, -h / 2, w, h, 20 * u, p, { hot: true }); } else { F.panel(-w / 2, -h / 2, w, h, isList ? 12 * u : 16 * u, p); if (!isList) { ctx.fillStyle = n.depth === 1 ? p._c2 : hexA(p._c1, .7); F.rr(-w / 2, -h / 2, w, 10 * u, 5 * u); ctx.fill(); } } var two = !!n.sub && !isList, nameSize = Math.min(isList ? 30 * u : (n.depth === 0 ? 46 * u : 38 * u), h * (two ? .36 : .44)); F.text(n.name, 0, two ? -h * .14 : 2 * u, { size: nameSize, weight: rootLike ? 900 : isList ? 600 : 800, color: rootLike ? '#fff' : p._tx, maxW: w - 30 * u }); if (two) F.text(n.sub, 0, h * .24, { size: Math.min(26 * u, h * .26), weight: 500, color: rootLike ? 'rgba(255,255,255,.9)' : p._tx, maxW: w - 30 * u, alpha: .85 }); else if (isList && n.sub) F.text(n.name + ' · ' + n.sub, 0, 2 * u, { size: nameSize, weight: 600, color: p._tx, maxW: w - 30 * u }); ctx.restore(); });
       }
     }
   ]);
