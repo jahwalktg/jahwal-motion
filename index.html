@@ -34,6 +34,32 @@ h1{margin:0;font-size:1.35rem}
 @media (max-width:900px){.layout{grid-template-columns:1fr}.col3{grid-column:auto}}
 .card{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:14px}
 .card h2{margin:0 0 8px;font-size:1.15rem;display:flex;align-items:center;gap:8px}
+#gal{position:fixed;inset:0;background:rgba(10,16,40,.72);backdrop-filter:blur(4px);z-index:400;display:none;overflow:auto;padding:16px}
+#gal.on{display:block}
+.galIn{max-width:1500px;margin:0 auto;background:var(--bg);border:1.5px solid var(--line);border-radius:18px;padding:14px 18px 22px;min-height:60vh}
+.galHead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.galHead b{font-size:1.1rem;flex:1 1 240px}
+.galHead #galQ{flex:1 1 260px;max-width:420px;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);font:inherit}
+.gsec{margin:14px 0 6px}
+.gsec h3{margin:0 0 10px;font-size:1.05rem;padding-left:10px;border-left:5px solid var(--blue)}
+.gsec h3 small{color:var(--muted);font-weight:500;font-size:.82rem;margin-left:6px}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.gc{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;transition:transform .12s,border-color .12s}
+.gc:hover,.gc.live{border-color:var(--blue);transform:translateY(-2px)}
+.gth{position:relative;aspect-ratio:16/9;background:#111}
+.gth canvas{width:100%;height:100%;display:block}
+.gth .gtag{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.6);color:#fff;font-size:.72rem;padding:2px 8px;border-radius:8px}
+.gth .gtag+.gtag{left:auto;right:8px}
+.gth .gnum{position:absolute;left:8px;top:8px;width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center}
+.gth .ghint{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.55);color:#fff;font-size:.72rem;padding:2px 8px;border-radius:8px;opacity:.9}
+.gc.live .ghint{display:none}
+.gb{padding:10px 12px 4px;flex:1}
+.gb b{display:block;font-size:.98rem;margin-bottom:4px}
+.gb p{margin:0;font-size:.82rem;color:var(--muted);line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.gb small{display:block;margin-top:6px;color:var(--blue);font-size:.74rem}
+.gops{display:flex;gap:6px;padding:8px 12px 12px}
+.gops .btn{min-height:34px;font-size:.84rem;padding:4px 10px}
+@media (max-width:700px){.ggrid{grid-template-columns:repeat(2,1fr)}.gb p{-webkit-line-clamp:2}.gops .btn{font-size:.78rem}}
 .step{display:inline-flex;flex:none;width:34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;font-weight:900;font-size:1.2rem;align-items:center;justify-content:center;line-height:1}
 .guide{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;margin:8px 0 14px}
 .scName{margin:4px 0 4px;font-size:1.02rem}
@@ -146,6 +172,7 @@ footer{margin:24px 0 10px;color:var(--muted);font-size:.85rem;text-align:center}
   <div class="layout">
     <aside class="card">
       <h2><span class="step">1</span>장면 고르기</h2>
+      <button type="button" class="btn main" id="galBtn" style="width:100%;margin:0 0 8px"><span style="font-size:1.05rem">🗂 전체 장면 한눈에 보기</span><small>50가지를 큰 그림으로 둘러보기 · 올리면 움직임</small></button>
       <input type="search" id="q" placeholder="찾기: 시상, 타이머, QR, 국기, 조 편성…" aria-label="장면 찾기">
       <div id="sits" class="gtabs sits"></div>
       <div id="gtabs" class="gtabs"></div>
@@ -237,6 +264,18 @@ footer{margin:24px 0 10px;color:var(--muted);font-size:.85rem;text-align:center}
   </footer>
 </div>
 
+<div id="gal" role="dialog" aria-label="전체 장면 한눈에 보기">
+  <div class="galIn">
+    <div class="galHead">
+      <b>🗂 전체 장면 한눈에 보기 <span class="hint" id="galCnt"></span></b>
+      <input type="search" id="galQ" placeholder="찾기: 시상, 타이머, QR, 국기, 조 편성…">
+      <button type="button" class="btn" id="galClose">✕ 닫기 (Esc)</button>
+    </div>
+    <div class="gtabs" id="galSits"></div>
+    <p class="hint" style="margin:4px 0 8px">카드에 마우스를 올리면 그 자리에서 움직입니다. 「이 장면 쓰기」를 누르면 입력 칸으로, 「＋ 담기」는 PPT 묶음에 넣습니다. 미리보기는 지금 고른 테마·색으로 그립니다.</p>
+    <div id="galBody"></div>
+  </div>
+</div>
 <div id="live"><canvas id="liveCv"></canvas><button type="button" id="liveExit">✕ 나가기 (Esc)</button><div id="liveHelp">스페이스 멈춤/재생 · R 처음부터 · Esc 나가기</div></div>
 <div id="prog"><div class="box"><div id="progTxt">만드는 중…</div><div id="progBarWrap"><div id="progBar"></div></div><button type="button" class="btn" id="progCancel">그만하기</button></div></div>
 <div id="toast"></div>
@@ -259,8 +298,9 @@ footer{margin:24px 0 10px;color:var(--muted);font-size:.85rem;text-align:center}
 <script src="scenes/j_run3.js?v=4"></script>
 <script src="scenes/k_ppt3.js?v=4"></script>
 <script src="scenes/l_end3.js?v=4"></script>
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 <script src="bundle.js?v=6"></script>
+<script src="gallery.js?v=7"></script>
 <script src="https://jahwalktg.github.io/contact.js" defer></script>
 </body>
 </html>
