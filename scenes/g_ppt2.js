@@ -93,7 +93,7 @@
     /* 35. 원형 퍼센트 */
     {
       id: 'pct', group: 'PPT 꾸밈', icon: '🎯', name: '원형 퍼센트 — 달성률', dur: 5,
-      desc: '고리가 채워지며 퍼센트가 올라갑니다(3개까지). 목표 달성률·만족도·취업률.',
+      desc: '고리가 채워지며 퍼센트가 올라갑니다(3개까지). 100%를 넘으면 고리는 꽉 차고 위에 「목표 초과 +N%」 표가 붙습니다. 목표 달성률·만족도·취업률.',
       fields: [
         { k: 'title', label: '제목(선택)', def: '2026년 목표 달성', max: 30 },
         { k: 'items', label: '항목(한 줄에 「이름 | 퍼센트」, 3개까지)', type: 'lines', def: '참여자 모집 | 112\n취·창업 | 86\n교육 만족도 | 94', max: 3 }
@@ -107,8 +107,8 @@
           var g = E.out(seg(t, .5 + i * .3, 2)), v = Math.min(it.v, 999), fill = Math.min(1, v / 100) * g;
           ctx.save(); ctx.lineWidth = R * .22; ctx.lineCap = 'round'; ctx.strokeStyle = hexA(p._tx, .12); ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
           ctx.strokeStyle = i === 0 ? p._c1 : i === 1 ? p._c2 : '#1F9D5C'; ctx.beginPath(); ctx.arc(x, y, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * fill); ctx.stroke();
-          if (v > 100 && g > .99) { ctx.strokeStyle = '#F2B705'; ctx.beginPath(); ctx.arc(x, y, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, (v - 100) / 100)); ctx.stroke(); }
           ctx.restore();
+          if (v > 100 && g > .99) { ctx.save(); ctx.globalAlpha = seg(t, 2.6 + i * .3, .4); ctx.fillStyle = '#F2B705'; F.rr(x - 120 * u, y - R - 80 * u, 240 * u, 50 * u, 25 * u); ctx.fill(); ctx.restore(); F.text('목표 초과 +' + Math.round(v - 100) + '%', x, y - R - 55 * u, { size: 28 * u, weight: 800, color: '#1A2B50', maxW: 220 * u, alpha: seg(t, 2.6 + i * .3, .4) }); }
           F.text(Math.round(v * g) + '%', x, y + 4 * u, { size: R * .58, weight: 900, color: p._tx, maxW: R * 1.4 });
           F.text(it.l, x, y + R + 70 * u, { size: Math.min(44 * u, R * .32), weight: 600, color: p._tx, maxW: R * 2.6, alpha: seg(t, .5 + i * .3, .5) });
         });
